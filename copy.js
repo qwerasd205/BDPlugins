@@ -21,9 +21,11 @@ console.log(`Found plugin file: ${plugin}...`);
 const dataFolder
     = process.env.APPDATA
     || (
-        process.platform == 'darwin'
-        ? process.env.HOME + '/Library/Application Support'
-        : process.env.HOME + "/.config"
+        process.platform === 'darwin'
+        ? path.join(process.env.HOME, 'Library', 'Application Support')
+        : process.env.XDG_CONFIG_HOME
+            ? process.env.XDG_CONFIG_HOME
+            : path.join(process.env.HOME, ".config")
     );
 const pluginsFolder = path.join(dataFolder, 'BetterDiscord', 'plugins');
 if (!fs.existsSync(pluginsFolder)) err(`Couldn't find plugins folder (${pluginsFolder})`);
