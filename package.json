@@ -1,0 +1,30 @@
+{
+    "name": "bdplugins",
+    "version": "N/A",
+    "description": "BD plugins by Qwerasd",
+    "scripts": {
+        "build": "node build.js",
+        "copy": "node copy.js",
+        "dev": "node build.js; node copy.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/qwerasd205/BDPlugins.git"
+    },
+    "keywords": [
+        "BD",
+        "BetterDiscord",
+        "Plugins"
+    ],
+    "author": "Qwerasd",
+    "license": "UNLICENSED",
+    "bugs": {
+        "url": "https://github.com/qwerasd205/BDPlugins/issues"
+    },
+    "homepage": "https://github.com/qwerasd205/BDPlugins#readme",
+    "devDependencies": {
+        "@types/node": "^16.4.10",
+        "@types/react": "^17.0.15",
+        "typescript": "^4.3.5"
+    }
+}
