@@ -23,7 +23,7 @@ const dataFolder
     || (
         process.platform == 'darwin'
         ? process.env.HOME + '/Library/Application Support'
-        : process.env.HOME + "/.local/share"
+        : process.env.HOME + "/.config"
     );
 const pluginsFolder = path.join(dataFolder, 'BetterDiscord', 'plugins');
 if (!fs.existsSync(pluginsFolder)) err(`Couldn't find plugins folder (${pluginsFolder})`);
