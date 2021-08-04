@@ -36,16 +36,17 @@ compile(
         src_file
     ],
     {
-        target           : ts.ScriptTarget.ES2018,
-        module           : ts.ModuleKind.ESNext,
-        moduleResolution : ts.ModuleResolutionKind.NodeJs,
-        declaration      : false,
-        strict           : false,
-        removeComments   : false,
-        outDir           : dir,
-        jsx              : type.endsWith('x') ? ts.JsxEmit.React : ts.JsxEmit.None,
-        jsxFactory       : 'BdApi.React.createElement',
-        typeRoots        : [
+        target              : ts.ScriptTarget.ES2018,
+        module              : ts.ModuleKind.CommonJS,
+        moduleResolution    : ts.ModuleResolutionKind.NodeJs,
+        declaration         : false,
+        strict              : false,
+        removeComments      : false,
+        noImplicitUseStrict : true,
+        outDir              : dir,
+        jsx                 : type.endsWith('x') ? ts.JsxEmit.React: ts.JsxEmit.None,
+        jsxFactory          : 'BdApi.React.createElement',
+        typeRoots           : [
             './node_modules/@types',
             './typings'
         ]

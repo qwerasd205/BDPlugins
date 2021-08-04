@@ -14,7 +14,7 @@ const {TooltipContainer}: {TooltipContainer: React.ComponentClass<{text: string,
 const Pin: React.ComponentClass<{width: number}>
     = BdApi.findModuleByDisplayName('Pin');
 
-module.exports = class TestPlugin {
+export default class TestPlugin {
     unpatch: Function;
 
     start() {

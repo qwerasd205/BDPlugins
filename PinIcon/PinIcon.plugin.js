@@ -5,10 +5,11 @@
  * @version 0.0.1
  * @authorId 140188899585687552
  */
+Object.defineProperty(exports, "__esModule", { value: true });
 const MessageModule = BdApi.findModule(m => m.default && m.default.toString && m.default.toString().includes('childrenRepliedMessage'));
 const { TooltipContainer } = BdApi.findModuleByProps("TooltipContainer");
 const Pin = BdApi.findModuleByDisplayName('Pin');
-module.exports = class TestPlugin {
+class TestPlugin {
     start() {
         BdApi.injectCSS('PinIcon', /*CSS*/ `
         span.plugin_PinIcon {
@@ -41,4 +42,5 @@ module.exports = class TestPlugin {
             this.unpatch();
         BdApi.clearCSS('PinIcon');
     }
-};
+}
+exports.default = TestPlugin;
