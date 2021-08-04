@@ -2,7 +2,7 @@
  * @name PinIcon
  * @author Qwerasd
  * @description Add an icon to messages that have been pinned.
- * @version 0.0.1
+ * @version 0.0.2
  * @authorId 140188899585687552
  */
 
@@ -14,7 +14,7 @@ const {TooltipContainer}: {TooltipContainer: React.ComponentClass<{text: string,
 const Pin: React.ComponentClass<{width: number}>
     = BdApi.findModuleByDisplayName('Pin');
 
-export default class TestPlugin {
+export default class PinIcon {
     unpatch: Function;
 
     start() {

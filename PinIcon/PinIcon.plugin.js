@@ -2,14 +2,14 @@
  * @name PinIcon
  * @author Qwerasd
  * @description Add an icon to messages that have been pinned.
- * @version 0.0.1
+ * @version 0.0.2
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 const MessageModule = BdApi.findModule(m => m.default && m.default.toString && m.default.toString().includes('childrenRepliedMessage'));
 const { TooltipContainer } = BdApi.findModuleByProps("TooltipContainer");
 const Pin = BdApi.findModuleByDisplayName('Pin');
-class TestPlugin {
+class PinIcon {
     start() {
         BdApi.injectCSS('PinIcon', /*CSS*/ `
         span.plugin_PinIcon {
@@ -43,4 +43,4 @@ class TestPlugin {
         BdApi.clearCSS('PinIcon');
     }
 }
-exports.default = TestPlugin;
+exports.default = PinIcon;
