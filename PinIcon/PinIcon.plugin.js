@@ -12,6 +12,11 @@ const Pin = BdApi.findModuleByDisplayName('Pin');
 class PinIcon {
     start() {
         BdApi.injectCSS('PinIcon', /*CSS*/ `
+        /* Lazy fix for pin icon showing in pinned messages popout '\_(•-•)_/' */
+        [data-list-item-id^="pins__"] .plugin_PinIcon {
+            display: none;
+        }
+
         span.plugin_PinIcon {
             color: var(--channels-default);
             margin-inline-start: 3px;
@@ -28,9 +33,10 @@ class PinIcon {
         this.unpatch = BdApi.monkeyPatch(MessageModule, 'default', {
             after: (patchData) => {
                 const isPinned = patchData.thisObject.props.childrenMessageContent.props.message.pinned;
-                if (isPinned) {
-                    patchData.thisObject.props.childrenMessageContent.props.content.push(BdApi.React.createElement("span", { className: "plugin_PinIcon" },
-                        BdApi.React.createElement(TooltipContainer, { text: "Pinned", position: "bottom" },
+                const hasIcon = patchData.thisObject.props.childrenMessageContent.props.content.some(c => c.key === 'PinIcon');
+                if (isPinned && !hasIcon) {
+                    patchData.thisObject.props.childrenMessageContent.props.content.push(BdApi.React.createElement("span", { className: "plugin_PinIcon", key: "PinIcon" },
+                        BdApi.React.createElement(TooltipContainer, { text: "Pinned", position: "bottom", key: "PinIcon" },
                             BdApi.React.createElement(Pin, { width: 18 }))));
                 }
                 return patchData.returnValue;
