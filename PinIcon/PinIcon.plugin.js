@@ -2,7 +2,7 @@
  * @name PinIcon
  * @author Qwerasd
  * @description Add an icon to messages that have been pinned.
- * @version 0.0.2
+ * @version 0.0.3
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
