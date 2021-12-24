@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Adds support for zooming and panning the image modal with trackpad gestures.
- * @version 0.0.1
+ * @version 0.0.2
  * @authorId 140188899585687552
  */
 
@@ -23,7 +23,7 @@ export default class PinchToZoom {
             that => {
                 requestAnimationFrame(() => {
                     const container = that._reactInternals.child.stateNode;
-                    const img       = container.getElementsByTagName('img')[0];
+                    const img       = container.getElementsByTagName('img')[0] ?? container.getElementsByTagName('video')[0];
                     const {width, height} = that._reactInternals.child.memoizedProps.children[0].props;
                     let zoom = 1,
                         x    = 0,
