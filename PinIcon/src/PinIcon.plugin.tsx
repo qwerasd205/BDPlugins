@@ -4,6 +4,7 @@
  * @description Add an icon to messages that have been pinned.
  * @version 0.0.3
  * @authorId 140188899585687552
+ * @updateUrl https://betterdiscord.app/gh-redirect?id=421
  */
 
 const MessageModule

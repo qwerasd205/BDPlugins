@@ -4,6 +4,7 @@
  * @description Adds support for zooming and panning the image modal with trackpad gestures.
  * @version 0.0.2
  * @authorId 140188899585687552
+ * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
 
 const ImageModal
