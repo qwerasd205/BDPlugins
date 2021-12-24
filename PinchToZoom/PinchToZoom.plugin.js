@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Adds support for zooming and panning the image modal with trackpad gestures.
- * @version 1.0.0
+ * @version 1.0.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -32,6 +32,7 @@ class PinchToZoom {
         }
         `);
         BdApi.Patcher.after('PinchToZoom', ImageModal.prototype, 'componentDidMount', that => {
+            // sometimes the LazyImage component does weird stuff and this RAF (mostly) avoid that.
             requestAnimationFrame(() => {
                 var _a;
                 const container = that._reactInternals.child.stateNode;
@@ -115,6 +116,11 @@ class PinchToZoom {
                 // we have to put the mousemove listener on the document in case the mouse
                 // exits the image while dragging
                 replace_document_move_listener(e => {
+                    if (!document.body.contains(img)) {
+                        // clean up after ourselves after the modal is closed
+                        document.removeEventListener('mousemove', document_move_listener);
+                        return;
+                    }
                     if ((e.buttons === 4 || (e.buttons === 1 && e.altKey)) && mouse_held) {
                         // pan
                         x += e.clientX - mouse_start.x;
