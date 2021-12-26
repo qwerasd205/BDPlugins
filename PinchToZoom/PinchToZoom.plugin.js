@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 1.1.0
+ * @version 1.1.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -49,7 +49,7 @@ class PinchToZoom {
     constructor() {
         this.default_settings = {
             mode: Mode.IMAGES,
-            zoom_limit: 16,
+            zoom_limit: 10,
             rate: 7,
         };
     }
