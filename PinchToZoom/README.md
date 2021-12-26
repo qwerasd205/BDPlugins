@@ -2,8 +2,11 @@
 
 ![PinchToZoomThumbnail](https://user-images.githubusercontent.com/7241851/147308002-ffdd2b0a-8c9b-4e72-b973-88f641bfda8f.png)
 
-### Adds support for zooming and panning the image modal with trackpad gestures.
+### Adds support for zooming and panning either the image modal or the whole app with trackpad gestures or mouse.
 ---
-### Also supports mouse usage:
+## Configurable
+![PinchToZoomSettings](https://user-images.githubusercontent.com/7241851/147398735-3fbf1635-68a3-4d5f-8829-4087cff70c2c.png)
+---
+## **Images** mode supports mouse
 - Scroll to zoom.
 - Pan with middle-click or alt-click and drag.

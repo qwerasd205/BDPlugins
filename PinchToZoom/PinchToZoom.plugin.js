@@ -1,15 +1,39 @@
 /**
  * @name PinchToZoom
  * @author Qwerasd
- * @description Adds support for zooming and panning the image modal with trackpad gestures.
- * @version 1.0.1
+ * @description Use pinch to zoom gestures in Discord.
+ * @version 1.1.0
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+var Mode;
+(function (Mode) {
+    Mode[Mode["IMAGES"] = 0] = "IMAGES";
+    Mode[Mode["WHOLE_APP_NATIVE"] = 1] = "WHOLE_APP_NATIVE";
+    Mode[Mode["WHOLE_APP_EMULATED"] = 2] = "WHOLE_APP_EMULATED";
+})(Mode || (Mode = {}));
 const ImageModal = BdApi.findModuleByDisplayName('ImageModal');
 const { imageWrapper } = BdApi.findModuleByProps('imageWrapper');
 const { downloadLink } = BdApi.findModuleByProps('downloadLink');
+const FormTitle = BdApi.findModuleByDisplayName('FormTitle'), FormText = BdApi.findModuleByDisplayName('FormText');
+const Slider = BdApi.findModuleByDisplayName('Slider');
+const RadioGroup = BdApi.findModuleByDisplayName('RadioGroup');
+class Radio extends BdApi.React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            value: props.defaultValue || props.options[0].value
+        };
+    }
+    render() {
+        return (BdApi.React.createElement(RadioGroup, { options: this.props.options, value: this.state.value, onChange: (selected) => {
+                this.setState({ value: selected.value });
+                this.props.onChange(selected.value);
+                this.forceUpdate();
+            } }));
+    }
+}
 let requested = null;
 const throttle = f => {
     cancelAnimationFrame(requested);
@@ -22,6 +46,13 @@ const replace_document_move_listener = f => {
     document.addEventListener('mousemove', document_move_listener);
 };
 class PinchToZoom {
+    constructor() {
+        this.default_settings = {
+            mode: Mode.IMAGES,
+            zoom_limit: 16,
+            rate: 7,
+        };
+    }
     start() {
         BdApi.injectCSS('PinchToZoom', /*CSS*/ `
         .${imageWrapper} {
@@ -31,6 +62,28 @@ class PinchToZoom {
             filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
         }
         `);
+        this.initialize_mode();
+    }
+    initialize_mode() {
+        const webFrame = require('electron').webFrame;
+        BdApi.Patcher.unpatchAll('PinchToZoom');
+        webFrame.setVisualZoomLevelLimits(1, 1);
+        const mode = this.get_setting('mode');
+        switch (mode) {
+            case Mode.IMAGES:
+                this.patch_image_modal();
+                break;
+            case Mode.WHOLE_APP_NATIVE:
+                webFrame.setVisualZoomLevelLimits(1, this.get_setting('zoom_limit'));
+                break;
+            case Mode.WHOLE_APP_EMULATED:
+                // TODO: Emulated whole app zooming for systems that don't support it natively.
+                break;
+        }
+    }
+    patch_image_modal() {
+        const zoom_limit = this.get_setting('zoom_limit');
+        const rate = 150 - this.get_setting('rate') * 10;
         BdApi.Patcher.after('PinchToZoom', ImageModal.prototype, 'componentDidMount', that => {
             // sometimes the LazyImage component does weird stuff and this RAF (mostly) avoid that.
             requestAnimationFrame(() => {
@@ -78,12 +131,12 @@ class PinchToZoom {
                         e.preventDefault();
                         e.stopPropagation();
                         const delta = e.deltaY + e.deltaX;
-                        const d = 1 - delta / 75;
+                        const d = 1 - delta / rate;
                         zoom *= d;
                         if (zoom < 1)
                             zoom = 1;
-                        else if (zoom > 16)
-                            zoom = 16;
+                        else if (zoom > zoom_limit)
+                            zoom = zoom_limit;
                         else {
                             x *= d;
                             y *= d;
@@ -140,6 +193,64 @@ class PinchToZoom {
         BdApi.Patcher.unpatchAll('PinchToZoom');
         BdApi.clearCSS('PinchToZoom');
         document.removeEventListener('mousemove', document_move_listener);
+    }
+    get_setting(setting) {
+        var _a;
+        return (_a = BdApi.loadData('PinchToZoom', setting)) !== null && _a !== void 0 ? _a : this.default_settings[setting];
+    }
+    set_setting(setting, value) {
+        return BdApi.saveData('PinchToZoom', setting, value);
+    }
+    getSettingsPanel() {
+        let mode = this.get_setting('mode');
+        const mode_change = (value) => {
+            mode = value;
+            this.set_setting('mode', mode);
+            this.initialize_mode();
+        };
+        let rate = this.get_setting('rate');
+        const rate_change = (value) => {
+            rate = value;
+            this.set_setting('rate', rate);
+            this.initialize_mode();
+        };
+        let zoom_limit = this.get_setting('zoom_limit');
+        const zoom_limit_change = (value) => {
+            zoom_limit = value;
+            this.set_setting('zoom_limit', zoom_limit);
+            this.initialize_mode();
+        };
+        return (BdApi.React.createElement("div", { id: "ptz_settings" },
+            BdApi.React.createElement(FormTitle, null, "Zoom Type"),
+            BdApi.React.createElement(Radio, { options: [{
+                        value: Mode.IMAGES,
+                        name: 'Images'
+                    },
+                    {
+                        value: Mode.WHOLE_APP_NATIVE,
+                        name: 'Whole App'
+                    },
+                    // {
+                    //     value: Mode.WHOLE_APP_EMULATED,
+                    //     name: 'Whole App (emulated)'
+                    // }
+                ], onChange: mode_change, defaultValue: mode }),
+            BdApi.React.createElement(FormText, null,
+                BdApi.React.createElement("b", null, "Whole App"),
+                " enables the browser's built-in trackpad zoom for the entire app."),
+            BdApi.React.createElement("br", null),
+            BdApi.React.createElement(FormTitle, null, "Zoom Limit"),
+            BdApi.React.createElement(FormText, null, "Maximum zoom level"),
+            BdApi.React.createElement("br", null),
+            BdApi.React.createElement(Slider, { minValue: 2, maxValue: 20, defaultValue: 10, initialValue: zoom_limit, onValueChange: zoom_limit_change, markers: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20], stickToMarkers: true, equidistant: true, onMarkerRender: v => `${v}x` }),
+            BdApi.React.createElement("br", null),
+            BdApi.React.createElement(FormTitle, null, "Zoom Rate"),
+            BdApi.React.createElement(FormText, null,
+                "Higher value = faster zoom. Only applies to ",
+                BdApi.React.createElement("b", null, "Images"),
+                " mode."),
+            BdApi.React.createElement("br", null),
+            BdApi.React.createElement(Slider, { minValue: 1, maxValue: 10, defaultValue: 7, initialValue: rate, onValueChange: rate_change, markers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], stickToMarkers: true, equidistant: true })));
     }
 }
 exports.default = PinchToZoom;
