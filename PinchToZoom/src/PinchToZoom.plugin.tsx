@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 1.1.1
+ * @version 1.1.2
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -71,6 +71,9 @@ const replace_document_move_listener = f => {
     document_move_listener = f;
     document.addEventListener('mousemove', document_move_listener);
 };
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
 export default class PinchToZoom {
 
     default_settings = {
@@ -142,35 +145,35 @@ export default class PinchToZoom {
                     };
                     let last_trackpad_use = 0;
                     container.addEventListener('wheel', e => {
-                        // a mouse always gives wheelDeltaY increments of 120, and will never give deltaX
+                        // a mouse always gives wheelDeltaY increments of 40, and will never give deltaX
                         // also the user isn't gonna switch between a trackpad and mouse within 250ms
                         const is_mouse =
-                            (Math.abs(e.wheelDeltaY) % 120 === 0)
+                            (Math.abs(e.wheelDeltaY) % 40 === 0)
                             && !e.deltaX
                             && (e.timeStamp - last_trackpad_use > 250);
-                        // trackpads *will* give exact 120 increments in case of zoom gestures, but
+                        // trackpads *will* give exact 40 increments in case of zoom gestures, but
                         // in that case we don't care anyway, since we wanna do the same behaviour
-                        if (Math.abs(e.wheelDeltaY) % 120 !== 0) last_trackpad_use = e.timeStamp;
+                        if (Math.abs(e.wheelDeltaY) % 40 !== 0) last_trackpad_use = e.timeStamp;
                         if (e.ctrlKey || is_mouse) {
                             // zoom
                             e.preventDefault();
                             e.stopPropagation();
                             const delta = e.deltaY + e.deltaX;
-                            const d = 1 - delta / rate;
+                            const d = clamp(
+                                (1 - delta / rate),
+                                1/zoom, zoom_limit/zoom
+                            );
                             zoom *= d;
-                            if (zoom < 1)       zoom = 1;
-                            else if (zoom > zoom_limit) zoom = zoom_limit;
-                            else {
-                                x *= d;
-                                y *= d;
-                                // calculate location of mouse relative to center
-                                // in order to zoom in/out from the mouse location
-                                const {left, top, width, height} = container.getBoundingClientRect();
-                                const mx = (e.clientX - left) - (width / 2);
-                                const my = (e.clientY - top) - (height / 2);
-                                x += mx * (1 - d);
-                                y += my * (1 - d);
-                            }
+                            // adjust panning accordingly
+                            x *= d;
+                            y *= d;
+                            // calculate location of mouse relative to center
+                            // in order to zoom in/out from the mouse location
+                            const {left, top, width, height} = container.getBoundingClientRect();
+                            const mx = (e.clientX - left) - (width / 2);
+                            const my = (e.clientY - top) - (height / 2);
+                            x += mx * (1 - d);
+                            y += my * (1 - d);
                         } else {
                             // pan
                             x -= e.deltaX;
