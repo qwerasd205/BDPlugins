@@ -46,6 +46,7 @@ compile(
         outDir              : dir,
         jsx                 : type.endsWith('x') ? ts.JsxEmit.React: ts.JsxEmit.None,
         jsxFactory          : 'BdApi.React.createElement',
+        jsxFragmentFactory  : "BdApi.React.Fragment",
         typeRoots           : [
             './node_modules/@types',
             './typings'

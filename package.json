@@ -5,7 +5,8 @@
     "scripts": {
         "build": "node build.js",
         "copy": "node copy.js",
-        "dev": "node build.js; node copy.js"
+        "dev": "node build.js; node copy.js",
+        "new": "node new.js"
     },
     "repository": {
         "type": "git",

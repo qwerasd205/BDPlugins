@@ -5,6 +5,7 @@
         "moduleResolution": "node",
         "jsx": "react",
         "jsxFactory": "BdApi.React.createElement",
+        "jsxFragmentFactory": "BdApi.React.Fragment",
         "typeRoots": [
             "./node_modules/@types",
             "./typings"
