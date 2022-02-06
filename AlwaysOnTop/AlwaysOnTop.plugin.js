@@ -2,7 +2,7 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.0.0
+ * @version 1.0.1
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -52,7 +52,7 @@ const KeybindRecorder = (props) => {
         BdApi.React.createElement("span", { className: "keybind-recorder-controls" },
             BdApi.React.createElement("button", { onClick: startRecording }, "Record"),
             BdApi.React.createElement("button", { onClick: () => { setKeybind(props.default); props.onChange(props.default); } }, "Reset")),
-        BdApi.React.createElement("input", { type: "text", ref: input, onKeyDown: handleKeyDown })));
+        BdApi.React.createElement("input", { type: "text", ref: input, onKeyDown: handleKeyDown, onBlur: stopRecording })));
 };
 class AlwaysOnTop {
     constructor() {

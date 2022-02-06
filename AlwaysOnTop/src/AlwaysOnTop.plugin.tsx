@@ -2,7 +2,7 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.0.0
+ * @version 1.0.1
  * @authorId 140188899585687552
  */
 
@@ -77,7 +77,7 @@ const KeybindRecorder: React.FunctionComponent<{ default: Keybind, onChange: (k:
                 <button onClick={startRecording}>Record</button>
                 <button onClick={() => {setKeybind(props.default); props.onChange(props.default)}}>Reset</button>
             </span>
-            <input type="text" ref={input} onKeyDown={handleKeyDown} />
+            <input type="text" ref={input} onKeyDown={handleKeyDown} onBlur={stopRecording} />
         </div>
     )
 }
