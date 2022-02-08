@@ -36,7 +36,7 @@ compile(
         src_file
     ],
     {
-        target              : ts.ScriptTarget.ES2018,
+        target              : ts.ScriptTarget.ES2021,
         module              : ts.ModuleKind.CommonJS,
         moduleResolution    : ts.ModuleResolutionKind.NodeJs,
         declaration         : false,
