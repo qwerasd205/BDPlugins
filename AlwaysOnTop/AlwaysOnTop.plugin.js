@@ -2,7 +2,7 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.0.1
+ * @version 1.1.0
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -13,6 +13,19 @@ const setAlwaysOnTop = (v) => {
     BdApi.showToast(`Always on top ${v ? 'enabled' : 'disabled'}.`, { type: v ? 'success' : 'error' });
 };
 const isMac = process.platform === 'darwin';
+const createKeybindObject = async (e) => {
+    var _a, _b;
+    //@ts-ignore
+    const layoutMap = await navigator.keyboard.getLayoutMap();
+    return {
+        location: e.location,
+        key: (_b = (_a = layoutMap.get(e.code)) === null || _a === void 0 ? void 0 : _a.toUpperCase()) !== null && _b !== void 0 ? _b : e.code,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        shift: e.shiftKey,
+        meta: e.metaKey,
+    };
+};
 const { useState, useRef } = BdApi.React;
 const KeybindRecorder = (props) => {
     const [keybind, setKeybind] = useState(props.default);
@@ -26,29 +39,24 @@ const KeybindRecorder = (props) => {
         setRecording(false);
         input.current.blur();
     };
-    const handleKeyDown = (e) => {
+    const handleKeyDown = async (e) => {
         if (['Alt', 'Shift', 'Control', 'Meta'].includes(e.key))
             return;
         if (recording) {
-            const k = {
-                key: e.key.toLowerCase(),
-                keyName: e.code.slice(3),
-                ctrl: e.ctrlKey,
-                alt: e.altKey,
-                shift: e.shiftKey,
-                meta: e.metaKey
-            };
+            const k = await createKeybindObject(e);
             setKeybind(k);
             props.onChange(k);
             stopRecording();
         }
     };
     return (BdApi.React.createElement("div", { className: `keybind-recorder ${recording ? 'recording' : ''}` },
-        BdApi.React.createElement("span", { className: "keybind-recorder-control-keys" }, (keybind.meta ? (isMac ? '⌘' : '⊞') : '') +
-            (keybind.ctrl ? '⌃' : '') +
-            (keybind.alt ? '⌥' : '') +
-            (keybind.shift ? '⇧' : '')),
-        BdApi.React.createElement("span", { className: "keybind-recorder-key" }, keybind.keyName),
+        BdApi.React.createElement("span", { className: "keybind-recorder-control-keys" }, [
+            (keybind.meta ? (isMac ? '⌘ Command' : '⊞ Win') : ''),
+            (keybind.ctrl ? ('⌃ Ctrl') : ''),
+            (keybind.alt ? '⌥ ' + (isMac ? 'Option' : 'Alt') : ''),
+            (keybind.shift ? '⇧ Shift' : ''),
+        ].filter(Boolean).map(k => k + ' + ').join('')),
+        BdApi.React.createElement("span", { className: "keybind-recorder-key" }, keybind.key),
         BdApi.React.createElement("span", { className: "keybind-recorder-controls" },
             BdApi.React.createElement("button", { onClick: startRecording }, "Record"),
             BdApi.React.createElement("button", { onClick: () => { setKeybind(props.default); props.onChange(props.default); } }, "Reset")),
@@ -59,12 +67,12 @@ class AlwaysOnTop {
         var _a, _b;
         this.state = (_a = BdApi.loadData('AlwaysOnTop', 'state')) !== null && _a !== void 0 ? _a : true;
         this.keybind = (_b = BdApi.loadData('AlwaysOnTop', 'keybind')) !== null && _b !== void 0 ? _b : {
-            key: 't',
-            keyName: 'T',
-            ctrl: true,
+            location: 0,
+            key: 'F11',
+            ctrl: !isMac,
+            meta: isMac,
             alt: false,
             shift: false,
-            meta: true
         };
         this.boundKeyDown = this.onKeyDown.bind(this);
     }
@@ -78,8 +86,8 @@ class AlwaysOnTop {
                 background-color: #000;
                 position: relative;
                 display: inline-block;
-                width: 18.5ch;
                 padding: 8px;
+                padding-right: 12ch;
                 border-radius: 8px;
                 border: 1px solid white;
             }
@@ -114,9 +122,10 @@ class AlwaysOnTop {
         document.removeEventListener('keydown', this.boundKeyDown);
         BdApi.clearCSS('AlwaysOnTop');
     }
-    onKeyDown(e) {
+    async onKeyDown(e) {
         const { key, ctrl, alt, shift, meta } = this.keybind;
-        if (e.key === key && e.ctrlKey === ctrl && e.altKey === alt && e.shiftKey === shift && e.metaKey === meta) {
+        const k = await createKeybindObject(e);
+        if (k.key === key && k.ctrl === ctrl && k.alt === alt && k.shift === shift && k.meta === meta) {
             this.state = !this.state;
             setAlwaysOnTop(this.state);
             BdApi.saveData('AlwaysOnTop', 'state', this.state);

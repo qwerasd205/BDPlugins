@@ -4,4 +4,4 @@
 
 ### Keep the Discord window from being hidden under other windows.
 
-Toggle with `CTRL` + `⊞ Win` + `T` on Windows / `CTRL` + `⌘ Command` + `T` on macOS, or change the key combo in the settings.
+Toggle with `⌃ Ctrl` + `F11` on Windows / `⌘ Command` + `F11` on macOS, or change the key combo in the settings.
