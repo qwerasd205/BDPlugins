@@ -4,6 +4,7 @@
  * @description Keep the Discord window from being hidden under other windows.
  * @version 1.1.1
  * @authorId 140188899585687552
+ * @updateUrl https://betterdiscord.app/gh-redirect?id=611
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 const FormTitle = BdApi.findModuleByDisplayName('FormTitle'), FormText = BdApi.findModuleByDisplayName('FormText');
