@@ -2,7 +2,7 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.1.0
+ * @version 1.1.1
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -18,11 +18,12 @@ const createKeybindObject = async (e) => {
     const layoutMap = await navigator.keyboard.getLayoutMap();
     return {
         location: e.location,
-        key: layoutMap.get(e.code)?.toUpperCase() ?? e.code,
+        key: e.code,
         ctrl: e.ctrlKey,
         alt: e.altKey,
         shift: e.shiftKey,
         meta: e.metaKey,
+        keyName: layoutMap.get(e.code)?.toUpperCase() ?? e.code,
     };
 };
 const { useState, useRef } = BdApi.React;
@@ -48,14 +49,23 @@ const KeybindRecorder = (props) => {
             stopRecording();
         }
     };
+    //@ts-ignore
+    navigator.keyboard.getLayoutMap().then((layoutMap) => {
+        const newKeyName = layoutMap.get(keybind.key)?.toUpperCase() ?? keybind.key;
+        if (newKeyName !== keybind.keyName) {
+            setKeybind({ ...keybind, keyName: newKeyName });
+        }
+    });
+    if (recording)
+        input.current.focus(); // if for some reason the component re-renders in the middle of recording, focus the input again
     return (BdApi.React.createElement("div", { className: `keybind-recorder ${recording ? 'recording' : ''}` },
         BdApi.React.createElement("span", { className: "keybind-recorder-control-keys" }, [
             (keybind.meta ? (isMac ? '⌘ Command' : '⊞ Win') : ''),
             (keybind.ctrl ? ('⌃ Ctrl') : ''),
-            (keybind.alt ? '⌥ ' + (isMac ? 'Option' : 'Alt') : ''),
+            (keybind.alt ? (isMac ? '⌥ Option' : '⎇ Alt') : ''),
             (keybind.shift ? '⇧ Shift' : ''),
         ].filter(Boolean).map(k => k + ' + ').join('')),
-        BdApi.React.createElement("span", { className: "keybind-recorder-key" }, keybind.key),
+        BdApi.React.createElement("span", { className: "keybind-recorder-key" }, keybind.keyName),
         BdApi.React.createElement("span", { className: "keybind-recorder-controls" },
             BdApi.React.createElement("button", { onClick: startRecording }, "Record"),
             BdApi.React.createElement("button", { onClick: () => { setKeybind(props.default); props.onChange(props.default); } }, "Reset")),
@@ -67,6 +77,7 @@ class AlwaysOnTop {
         this.keybind = BdApi.loadData('AlwaysOnTop', 'keybind') ?? {
             location: 0,
             key: 'F11',
+            keyName: 'F11',
             ctrl: !isMac,
             meta: isMac,
             alt: false,
