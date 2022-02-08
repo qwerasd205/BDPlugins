@@ -14,12 +14,11 @@ const setAlwaysOnTop = (v) => {
 };
 const isMac = process.platform === 'darwin';
 const createKeybindObject = async (e) => {
-    var _a, _b;
     //@ts-ignore
     const layoutMap = await navigator.keyboard.getLayoutMap();
     return {
         location: e.location,
-        key: (_b = (_a = layoutMap.get(e.code)) === null || _a === void 0 ? void 0 : _a.toUpperCase()) !== null && _b !== void 0 ? _b : e.code,
+        key: layoutMap.get(e.code)?.toUpperCase() ?? e.code,
         ctrl: e.ctrlKey,
         alt: e.altKey,
         shift: e.shiftKey,
@@ -64,9 +63,8 @@ const KeybindRecorder = (props) => {
 };
 class AlwaysOnTop {
     constructor() {
-        var _a, _b;
-        this.state = (_a = BdApi.loadData('AlwaysOnTop', 'state')) !== null && _a !== void 0 ? _a : true;
-        this.keybind = (_b = BdApi.loadData('AlwaysOnTop', 'keybind')) !== null && _b !== void 0 ? _b : {
+        this.state = BdApi.loadData('AlwaysOnTop', 'state') ?? true;
+        this.keybind = BdApi.loadData('AlwaysOnTop', 'keybind') ?? {
             location: 0,
             key: 'F11',
             ctrl: !isMac,
