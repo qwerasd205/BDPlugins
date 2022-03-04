@@ -2,7 +2,7 @@
  * @name PinIcon
  * @author Qwerasd
  * @description Add an icon to messages that have been pinned.
- * @version 0.0.3
+ * @version 0.0.4
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=421
  */
@@ -38,27 +38,23 @@ export default class PinIcon {
             vertical-align: -6px;
         }`);
 
-        //@ts-ignore
-        this.unpatch = BdApi.monkeyPatch(MessageModule, 'default', {
-            after: (patchData) => {
-                const isPinned = patchData.thisObject.props.childrenMessageContent.props.message.pinned;
-                const hasIcon  = patchData.thisObject.props.childrenMessageContent.props.content.some(c => c.key === 'PinIcon');
-                if (isPinned && !hasIcon) {
-                    patchData.thisObject.props.childrenMessageContent.props.content.push(
-                        <span className="plugin_PinIcon" key="PinIcon">
-                            <TooltipContainer text="Pinned" position="bottom" key="PinIcon">
-                                <Pin width={18}/>
-                            </TooltipContainer>
-                        </span>
-                    );
-                }
-                return patchData.returnValue;
+        BdApi.Patcher.after('PinIcon', MessageModule, 'default', (_, [props]) => {
+            const isPinned = props.childrenMessageContent.props.message.pinned;
+            const hasIcon  = props.childrenMessageContent.props.content.some(c => c.key === 'PinIcon');
+            if (isPinned && !hasIcon) {
+                props.childrenMessageContent.props.content.push(
+                    <span className="plugin_PinIcon" key="PinIcon">
+                        <TooltipContainer text="Pinned" position="bottom" key="PinIcon">
+                            <Pin width={18}/>
+                        </TooltipContainer>
+                    </span>
+                );
             }
         });
     }
 
     stop() {
-        if (this.unpatch) this.unpatch();
+        BdApi.Patcher.unpatchAll('PinIcon');
         BdApi.clearCSS('PinIcon');
     }
 }
