@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 1.1.2
+ * @version 1.1.3
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -118,8 +118,8 @@ export default class PinchToZoom {
         const rate = 150 - this.get_setting('rate') * 10;
         BdApi.Patcher.after('PinchToZoom', ImageModal.prototype, 'componentDidMount',
             that => {
-                // sometimes the LazyImage component does weird stuff and this RAF (mostly) avoid that.
-                requestAnimationFrame(() => {
+                const lazy_image = that._reactInternals.child.child.stateNode;
+                const initialize_zooming = () => {
                     const container = that._reactInternals.child.stateNode;
                     const img       = container.getElementsByTagName('img')[0] ?? container.getElementsByTagName('video')[0];
                     const {width: w, height: h, maxWidth, maxHeight} = that._reactInternals.child.memoizedProps.children[0].props;
@@ -210,7 +210,19 @@ export default class PinchToZoom {
                             mouse_held = false;
                         }
                     });
-                });
+                };
+                if (lazy_image.state.readyState === 'READY') {
+                    initialize_zooming();
+                } else {
+                    const old_componentDidUpdate = lazy_image.componentDidUpdate;
+                    lazy_image.componentDidUpdate = (t) => {
+                        if (lazy_image.state.readyState === 'READY') {
+                            requestAnimationFrame(initialize_zooming);
+                            lazy_image.componentDidUpdate = old_componentDidUpdate;
+                        }
+                        old_componentDidUpdate.call(lazy_image, t);
+                    }
+                }
             }
         );
     }
