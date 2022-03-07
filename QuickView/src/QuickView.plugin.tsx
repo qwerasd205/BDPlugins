@@ -4,6 +4,7 @@
  * @description View icons, banners, and custom emojis with alt + click.
  * @version 0.0.2
  * @authorId 140188899585687552
+ * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
 
 const LazyImageZoomable
