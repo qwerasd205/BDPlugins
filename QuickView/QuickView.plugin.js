@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.0.1
+ * @version 0.0.2
  * @authorId 140188899585687552
  */
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -130,6 +130,8 @@ class QuickView {
             if (!ret)
                 return;
             const img = ret.props.children[0];
+            if (!img)
+                return;
             img.props.onClick = (e) => {
                 const el = e.target;
                 this.open_modal(el.src, el.naturalWidth, el.naturalHeight, el.src);

@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.0.1
+ * @version 0.0.2
  * @authorId 140188899585687552
  */
 
@@ -178,6 +178,7 @@ export default class QuickView {
         BdApi.Patcher.after('QuickView', Embed_module.prototype, 'renderAuthor', (that, [props], ret) => {
             if (!ret) return;
             const img = ret.props.children[0];
+            if (!img) return;
             img.props.onClick = (e: React.MouseEvent) => {
                 const el = (e.target as HTMLImageElement);
                 this.open_modal(
