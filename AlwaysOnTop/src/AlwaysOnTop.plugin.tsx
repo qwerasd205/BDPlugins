@@ -2,7 +2,7 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.1.1
+ * @version 1.2.0
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=611
  */
@@ -11,7 +11,22 @@ const
     FormTitle: React.ComponentClass
         = BdApi.findModuleByDisplayName('FormTitle'),
     FormText: React.ComponentClass
-        = BdApi.findModuleByDisplayName('FormText');
+        = BdApi.findModuleByDisplayName('FormText'),
+    FormDivider: React.ComponentClass
+        = BdApi.findModuleByDisplayName('FormDivider'),
+    SwitchItem: React.FunctionComponent<
+            {onChange: Function, note: string, value: boolean}
+        > = BdApi.findModuleByDisplayName('SwitchItem');
+
+const Switch: React.FunctionComponent<{onChange: Function, defaultValue: boolean, note: string}>
+    = ({onChange, defaultValue, note, children}) => {
+        const [value, setValue] = BdApi.React.useState(defaultValue);
+        const onChangeFunc = (newValue) => {
+            onChange(newValue);
+            setValue(newValue);
+        };
+        return <SwitchItem onChange={onChangeFunc} note={note} value={value} children={children}/>;
+    };
 
 const setAlwaysOnTop = (v: boolean): void => {
     //@ts-ignore
@@ -103,6 +118,12 @@ const KeybindRecorder: React.FunctionComponent<{ default: Keybind, onChange: (k:
     )
 }
 
+// Check the window is within 4 px of filling available space
+// because sometimes "maximized" windows don't actually fill all space -_-
+const isMaximized = () => 
+    window.screen.availWidth - window.outerWidth < 4
+    && window.screen.availHeight - window.outerHeight < 4;
+
 export default class AlwaysOnTop {
     state: boolean = BdApi.loadData('AlwaysOnTop', 'state') ?? true;
 
@@ -117,10 +138,20 @@ export default class AlwaysOnTop {
     };
 
     boundKeyDown = this.onKeyDown.bind(this);
+    boundResize = this.onResize.bind(this);
+
+    disableWhenMaximized = BdApi.loadData('AlwaysOnTop', 'disableWhenMaximized') ?? false;
+
+    disabledByMaximization = false;
 
     start() {
-        if (this.state) setAlwaysOnTop(true);
+        if (this.disableWhenMaximized && isMaximized()) {
+            this.disabledByMaximization = this.state;
+        } else if (this.state) {
+            setAlwaysOnTop(true);
+        }
         document.addEventListener('keydown', this.boundKeyDown);
+        window.addEventListener('resize', this.boundResize);
         BdApi.injectCSS('AlwaysOnTop', /* CSS */`
             .keybind-recorder {
                 color: #fff;
@@ -162,7 +193,19 @@ export default class AlwaysOnTop {
     stop() {
         setAlwaysOnTop(false);
         document.removeEventListener('keydown', this.boundKeyDown);
+        window.removeEventListener('resize', this.boundResize);
         BdApi.clearCSS('AlwaysOnTop');
+    }
+
+    onResize () {
+        if (!this.state || !this.disableWhenMaximized) return;
+        if (isMaximized()) {
+            setAlwaysOnTop(false);
+            this.disabledByMaximization = true;
+        } else if (this.disabledByMaximization) {
+            setAlwaysOnTop(true);
+            this.disabledByMaximization = false;
+        }
     }
 
     async onKeyDown (e: KeyboardEvent) {
@@ -184,6 +227,19 @@ export default class AlwaysOnTop {
                 this.keybind = k;
                 BdApi.saveData('AlwaysOnTop', 'keybind', k);
             }}></KeybindRecorder>
+            <br /><br />
+            <FormDivider />
+            <br />
+            <Switch
+                onChange={(value) => {
+                    this.disableWhenMaximized = value;
+                    BdApi.saveData('AlwaysOnTop', 'disableWhenMaximized', this.disableWhenMaximized);
+                }}
+                note="When the window is maximized, disable always on top functionality."
+                defaultValue={this.disableWhenMaximized}
+            >
+                Disable When Maximized
+            </Switch>
         </>
     }
 }
