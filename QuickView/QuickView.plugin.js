@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.1.1
+ * @version 0.1.2
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
@@ -26,7 +26,7 @@ const { embedAuthorIcon } = BdApi.findModuleByProps('embedAuthorIcon');
 const { bannerImg } = BdApi.findModuleByProps('bannerImg');
 const { avatar: chat_avatar } = BdApi.findModuleByProps('avatar', 'username', 'zalgo');
 const { avatar: popout_avatar } = BdApi.findModuleByProps('avatar', 'nickname', 'clickable');
-const { avatar: modal_avatar } = BdApi.findModuleByProps('avatar', 'header', 'badgeList');
+const { avatar: modal_avatar } = BdApi.findModuleByProps('avatar', 'header', 'badgeList') ?? { avatar: 'avatar-3QF_VA' }; // REEE discord lazy loading modules now ;-;
 const { blobContainer: server } = BdApi.findModuleByProps('blobContainer', 'pill');
 const { emojiContainer } = BdApi.findModule(m => m.emojiContainer && Object.keys(m).length === 1);
 const { reactionInner } = BdApi.findModuleByProps('reactionInner');
@@ -48,10 +48,11 @@ class QuickView {
             body.quickview-alt-key :is(.${emojiContainer}, .${reactionInner}) img:not([src^="/"]) { cursor: zoom-in; }
         `);
         this.add_patches();
-        document.addEventListener('keydown', this.on_key);
-        document.addEventListener('keyup', this.on_key);
+        document.addEventListener('mousemove', this.alt_tracker);
+        document.addEventListener('keydown', this.alt_tracker);
+        document.addEventListener('keyup', this.alt_tracker);
     }
-    on_key(e) {
+    alt_tracker(e) {
         if (e.altKey) {
             document.body.classList.add('quickview-alt-key');
         }
@@ -177,8 +178,9 @@ class QuickView {
     stop() {
         BdApi.clearCSS('QuickView');
         BdApi.Patcher.unpatchAll('QuickView');
-        document.removeEventListener('keydown', this.on_key);
-        document.removeEventListener('keyup', this.on_key);
+        document.removeEventListener('mousemove', this.alt_tracker);
+        document.removeEventListener('keydown', this.alt_tracker);
+        document.removeEventListener('keyup', this.alt_tracker);
     }
 }
 exports.default = QuickView;
