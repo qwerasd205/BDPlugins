@@ -2,7 +2,7 @@
  * @name PinIcon
  * @author Qwerasd
  * @description Add an icon to messages that have been pinned.
- * @version 0.0.5
+ * @version 0.0.6
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=421
  */
@@ -31,7 +31,8 @@ class PinIcon {
             vertical-align: -6px;
         }`);
         BdApi.Patcher.after('PinIcon', MessageModule, 'default', (_, [props]) => {
-            if (!props.childrenMessageContent?.props?.content)
+            // catch a whole bunch of annoying things like images in the upload state and stuff like that
+            if (!props.childrenMessageContent?.props?.content?.some)
                 return;
             const isPinned = props.childrenMessageContent.props.message.pinned;
             const hasIcon = props.childrenMessageContent.props.content.some(c => c.key === 'PinIcon');
