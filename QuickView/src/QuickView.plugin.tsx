@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.0.2
+ * @version 0.1.0
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
@@ -44,6 +44,12 @@ const Embed_module
 const { bannerPremium } = BdApi.findModuleByProps('bannerPremium');
 const { hasBanner } = BdApi.findModuleByProps('animatedContainer', 'hasBanner');
 const { embedAuthorIcon } = BdApi.findModuleByProps('embedAuthorIcon');
+const { bannerImg } = BdApi.findModuleByProps('bannerImg');
+const { avatar: chat_avatar } = BdApi.findModuleByProps('avatar', 'username', 'zalgo');
+const { avatar: popout_avatar } = BdApi.findModuleByProps('avatar', 'nickname', 'clickable');
+const { avatar: modal_avatar } = BdApi.findModuleByProps('avatar', 'header', 'badgeList');
+const { blobContainer: server } = BdApi.findModuleByProps('blobContainer', 'pill');
+const { emojiContainer } = BdApi.findModule(m => m.emojiContainer && Object.keys(m).length === 1);
 
 const { getEmojiURL } = BdApi.findModuleByProps('getEmojiURL');
 
@@ -51,8 +57,31 @@ export default class QuickView {
     start() {
         BdApi.injectCSS('QuickView', /*CSS*/`
             .${hasBanner} { z-index: 10; }
-            .${embedAuthorIcon} { cursor: pointer; }
+
+            .${embedAuthorIcon} { cursor: zoom-in; }
+            .${bannerImg}       { cursor: zoom-in; }
+            .${bannerPremium}   { cursor: zoom-in; }
+            .${modal_avatar}    { cursor: zoom-in; }
+
+            body.quickview-alt-key .${chat_avatar}                  { cursor: zoom-in; }
+            body.quickview-alt-key .${popout_avatar}                { cursor: zoom-in; }
+            body.quickview-alt-key .${server} div                   { cursor: zoom-in; }
+            body.quickview-alt-key .${emojiContainer} img[alt^=":"] { cursor: zoom-in; }
         `);
+        this.add_patches();
+        document.addEventListener('keydown', this.on_key);
+        document.addEventListener('keyup', this.on_key);
+    }
+
+    on_key (e: KeyboardEvent) {
+        if (e.altKey) {
+            document.body.classList.add('quickview-alt-key');
+        } else {
+            document.body.classList.remove('quickview-alt-key');
+        }
+    }
+
+    add_patches () {
         BdApi.Patcher.after('QuickView', UserProfileModalHeader_module, 'default', (_, [props], ret) => {
             const avatar_props = ret.props.children[1].props.children[0].props.children.props;
             const max_size = avatar_props.src.slice(0,avatar_props.src.indexOf('?')) + '?size=4096';
@@ -202,5 +231,7 @@ export default class QuickView {
     stop() {
         BdApi.clearCSS('QuickView');
         BdApi.Patcher.unpatchAll('QuickView');
+        document.removeEventListener('keydown', this.on_key);
+        document.removeEventListener('keyup', this.on_key);
     }
 }
