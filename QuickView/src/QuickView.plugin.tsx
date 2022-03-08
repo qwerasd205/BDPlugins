@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.1.0
+ * @version 0.1.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
@@ -50,6 +50,7 @@ const { avatar: popout_avatar } = BdApi.findModuleByProps('avatar', 'nickname', 
 const { avatar: modal_avatar } = BdApi.findModuleByProps('avatar', 'header', 'badgeList');
 const { blobContainer: server } = BdApi.findModuleByProps('blobContainer', 'pill');
 const { emojiContainer } = BdApi.findModule(m => m.emojiContainer && Object.keys(m).length === 1);
+const { reactionInner } = BdApi.findModuleByProps('reactionInner');
 
 const { getEmojiURL } = BdApi.findModuleByProps('getEmojiURL');
 
@@ -63,10 +64,11 @@ export default class QuickView {
             .${bannerPremium}   { cursor: zoom-in; }
             .${modal_avatar}    { cursor: zoom-in; }
 
-            body.quickview-alt-key .${chat_avatar}                  { cursor: zoom-in; }
-            body.quickview-alt-key .${popout_avatar}                { cursor: zoom-in; }
-            body.quickview-alt-key .${server} div                   { cursor: zoom-in; }
-            body.quickview-alt-key .${emojiContainer} img[alt^=":"] { cursor: zoom-in; }
+            body.quickview-alt-key .${chat_avatar}   { cursor: zoom-in; }
+            body.quickview-alt-key .${popout_avatar} { cursor: zoom-in; }
+            body.quickview-alt-key .${server} div    { cursor: zoom-in; }
+
+            body.quickview-alt-key :is(.${emojiContainer}, .${reactionInner}) img:not([src^="/"]) { cursor: zoom-in; }
         `);
         this.add_patches();
         document.addEventListener('keydown', this.on_key);
@@ -188,7 +190,6 @@ export default class QuickView {
             const original_onClick = ret.props.onClick?.bind(ret.props) || (() => {});
             ret.props.onClick = (e: React.MouseEvent) => {
                 if (e.altKey) {
-                    console.log(e);
                     e.stopPropagation();
                     if (!props.emojiId) return;
                     const emoji_url = getEmojiURL({ id: props.emojiId, animated: props.animated, size: 48 });
