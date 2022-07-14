@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View icons, banners, and custom emojis with alt + click.
- * @version 0.1.4
+ * @version 0.1.5
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
@@ -90,7 +90,7 @@ export default class QuickView {
     add_patches () {
         BdApi.Patcher.after('QuickView', UserProfileModalHeader_module, 'default', (_, [props], ret) => {
             const avatar_container_props = ret.props.children[1].props.children[0].props;
-            const avatar_props = avatar_container_props.children.props;
+            const avatar_props = avatar_container_props.children[1].props;
             const max_size = avatar_props.src.slice(0,avatar_props.src.indexOf('?')) + '?size=4096';
             avatar_container_props.onClick = () => {
                 this.open_modal(
@@ -132,7 +132,7 @@ export default class QuickView {
             const original_click = ret.props.children.props.onClick.bind(ret.props.children.props);
             ret.props.children.props.onClick = (e: React.MouseEvent) => {
                 if (e.altKey) {
-                    const avatar_url = ret.props.children.props.children[0].props.children.props.src;
+                    const avatar_url = ret.props.children.props.children[1].props.children.props.src;
                     this.open_modal(
                         avatar_url.slice(0,avatar_url.indexOf('?')) + '?size=4096',
                         4096, 4096,
