@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 1.1.3
+ * @version 1.1.4
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -122,7 +122,7 @@ export default class PinchToZoom {
                 const initialize_zooming = () => {
                     const container = that._reactInternals.child.stateNode;
                     const img       = container.getElementsByTagName('img')[0] ?? container.getElementsByTagName('video')[0];
-                    const {width: w, height: h, maxWidth, maxHeight} = that._reactInternals.child.memoizedProps.children[0].props;
+                    const {width: w, height: h, maxWidth, maxHeight} = that._reactInternals.child.child.memoizedProps;
                     const width  = Math.min(w, maxWidth);
                     const height = Math.min(h, maxHeight);
                     let zoom = 1,
