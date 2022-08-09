@@ -35,6 +35,7 @@ function err (message) {
 
 function generate_src (type) {
     let type_template = path.resolve(__dirname, `./templates/template.${type}`);
+    if (!fs.existsSync(type_template)) type_template = path.resolve(__dirname, `./templates/template.${type.substring(0,2)}`);
     if (!fs.existsSync(type_template)) type_template = path.resolve(__dirname, `./templates/template.js`);
     const template = fs.readFileSync(type_template, 'utf8');
     return template.replace(/\$NAME\$/g, target).replace(/\$DESC\$/g, description);
