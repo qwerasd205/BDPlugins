@@ -6,15 +6,19 @@
  * @authorId 140188899585687552
  */
 
-export default class $NAME$ {
+const PLUGIN_NAME = '$NAME$';
+
+const { Patcher, Webpack, Webpack: { Filters } } = BdApi;
+
+module.exports = class $NAME$ {
     start() {
-        BdApi.injectCSS('$NAME$', /*CSS*/`
+        BdApi.injectCSS(PLUGIN_NAME, /*CSS*/`
 
         `);
     }
 
     stop() {
-        BdApi.clearCSS('$NAME$');
-        BdApi.Patcher.unpatchAll('$NAME$');
+        BdApi.clearCSS(PLUGIN_NAME);
+        Patcher.unpatchAll(PLUGIN_NAME);
     }
 }
