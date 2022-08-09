@@ -74,7 +74,7 @@ const replace_document_move_listener = f => {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-export default class PinchToZoom {
+export = class PinchToZoom {
 
     default_settings = {
         mode: Mode.IMAGES,

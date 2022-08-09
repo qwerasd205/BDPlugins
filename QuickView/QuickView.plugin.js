@@ -6,7 +6,6 @@
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 // Bruh Discord cannot decide where to put LazyImageZoomable,
 // so I'm just gonna have both methods in case they switch again.
 const LazyImageZoomable = BdApi.findModuleByProps('LazyImageZoomable')?.LazyImageZoomable
@@ -34,7 +33,7 @@ const { blobContainer: server } = BdApi.findModuleByProps('blobContainer', 'pill
 const { emojiContainer } = BdApi.findModule(m => m.emojiContainer && Object.keys(m).length === 1);
 const { reactionInner } = BdApi.findModuleByProps('reactionInner');
 const { getEmojiURL } = BdApi.findModuleByProps('getEmojiURL');
-class QuickView {
+module.exports = class QuickView {
     start() {
         BdApi.injectCSS('QuickView', /*CSS*/ `
             .${hasBanner} { z-index: 10; }
@@ -186,5 +185,4 @@ class QuickView {
         document.removeEventListener('keydown', this.alt_tracker);
         document.removeEventListener('keyup', this.alt_tracker);
     }
-}
-exports.default = QuickView;
+};

@@ -57,7 +57,7 @@ const { reactionInner } = BdApi.findModuleByProps('reactionInner');
 
 const { getEmojiURL } = BdApi.findModuleByProps('getEmojiURL');
 
-export default class QuickView {
+export = class QuickView {
     start() {
         BdApi.injectCSS('QuickView', /*CSS*/`
             .${hasBanner} { z-index: 10; }

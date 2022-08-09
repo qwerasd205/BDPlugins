@@ -6,7 +6,6 @@
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 var Mode;
 (function (Mode) {
     Mode[Mode["IMAGES"] = 0] = "IMAGES";
@@ -46,7 +45,7 @@ const replace_document_move_listener = f => {
     document.addEventListener('mousemove', document_move_listener);
 };
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-class PinchToZoom {
+module.exports = class PinchToZoom {
     constructor() {
         this.default_settings = {
             mode: Mode.IMAGES,
@@ -259,5 +258,4 @@ class PinchToZoom {
             BdApi.React.createElement("br", null),
             BdApi.React.createElement(Slider, { minValue: 1, maxValue: 10, defaultValue: 7, initialValue: rate, onValueChange: rate_change, markers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], stickToMarkers: true, equidistant: true })));
     }
-}
-exports.default = PinchToZoom;
+};

@@ -124,7 +124,7 @@ const isMaximized = () =>
     window.screen.availWidth - window.outerWidth < 4
     && window.screen.availHeight - window.outerHeight < 4;
 
-export default class AlwaysOnTop {
+export = class AlwaysOnTop {
     state: boolean = BdApi.loadData('AlwaysOnTop', 'state') ?? true;
 
     keybind: Keybind = BdApi.loadData('AlwaysOnTop', 'keybind') ?? {

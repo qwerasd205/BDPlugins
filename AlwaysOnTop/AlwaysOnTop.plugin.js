@@ -6,7 +6,6 @@
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=611
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 const FormTitle = BdApi.findModuleByDisplayName('FormTitle'), FormText = BdApi.findModuleByDisplayName('FormText'), FormDivider = BdApi.findModuleByDisplayName('FormDivider'), SwitchItem = BdApi.findModuleByDisplayName('SwitchItem');
 const Switch = ({ onChange, defaultValue, note, children }) => {
     const [value, setValue] = BdApi.React.useState(defaultValue);
@@ -84,7 +83,7 @@ const KeybindRecorder = (props) => {
 // because sometimes "maximized" windows don't actually fill all space -_-
 const isMaximized = () => window.screen.availWidth - window.outerWidth < 4
     && window.screen.availHeight - window.outerHeight < 4;
-class AlwaysOnTop {
+module.exports = class AlwaysOnTop {
     constructor() {
         this.state = BdApi.loadData('AlwaysOnTop', 'state') ?? true;
         this.keybind = BdApi.loadData('AlwaysOnTop', 'keybind') ?? {
@@ -192,5 +191,4 @@ class AlwaysOnTop {
                     BdApi.saveData('AlwaysOnTop', 'disableWhenMaximized', this.disableWhenMaximized);
                 }, note: "When the window is maximized, disable always on top functionality.", defaultValue: this.disableWhenMaximized }, "Disable When Maximized"));
     }
-}
-exports.default = AlwaysOnTop;
+};

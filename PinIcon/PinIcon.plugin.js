@@ -6,11 +6,10 @@
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=421
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 const MessageModule = BdApi.findModule(m => m.default && m.default.toString && m.default.toString().includes('childrenRepliedMessage'));
 const { TooltipContainer } = BdApi.findModuleByProps("TooltipContainer");
 const Pin = BdApi.findModuleByDisplayName('Pin');
-class PinIcon {
+module.exports = class PinIcon {
     start() {
         BdApi.injectCSS('PinIcon', /*CSS*/ `
         /* Lazy fix for pin icon showing in pinned messages popout '\_(•-•)_/' */
@@ -47,5 +46,4 @@ class PinIcon {
         BdApi.Patcher.unpatchAll('PinIcon');
         BdApi.clearCSS('PinIcon');
     }
-}
-exports.default = PinIcon;
+};

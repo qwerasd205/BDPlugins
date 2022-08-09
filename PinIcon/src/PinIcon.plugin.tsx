@@ -15,7 +15,7 @@ const {TooltipContainer}: {TooltipContainer: React.ComponentClass<{text: string,
 const Pin: React.ComponentClass<{width: number}>
     = BdApi.findModuleByDisplayName('Pin');
 
-export default class PinIcon {
+export = class PinIcon {
     unpatch: Function;
 
     start() {
