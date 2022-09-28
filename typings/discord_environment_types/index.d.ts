@@ -3,5 +3,6 @@
 declare const BdApi: {
     [key: string]: any,
     [key: number]: any,
-    React: typeof React
+    React: typeof React,
+    ReactDOM: typeof ReactDOM
 };
