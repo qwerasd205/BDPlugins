@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 1.1.4
+ * @version 1.1.5
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -12,12 +12,13 @@ var Mode;
     Mode[Mode["WHOLE_APP_NATIVE"] = 1] = "WHOLE_APP_NATIVE";
     Mode[Mode["WHOLE_APP_EMULATED"] = 2] = "WHOLE_APP_EMULATED";
 })(Mode || (Mode = {}));
-const ImageModal = BdApi.findModuleByDisplayName('ImageModal');
-const { imageWrapper } = BdApi.findModuleByProps('imageWrapper');
-const { downloadLink } = BdApi.findModuleByProps('downloadLink');
-const FormTitle = BdApi.findModuleByDisplayName('FormTitle'), FormText = BdApi.findModuleByDisplayName('FormText');
-const Slider = BdApi.findModuleByDisplayName('Slider');
-const RadioGroup = BdApi.findModuleByDisplayName('RadioGroup');
+const { getModule, Filters: { byProps } } = BdApi.Webpack;
+const ImageModal = getModule(m => m?.prototype?.render && m.toString?.()?.includes?.('renderMobileCloseButton'));
+const { imageWrapper } = getModule(byProps('imageWrapper'));
+const { downloadLink } = getModule(byProps('downloadLink'));
+const FormTitle = getModule(byProps('Tags', 'Sizes')), FormText = getModule(m => m?.Sizes?.SIZE_32 && m.Colors);
+const Slider = getModule(m => m?.prototype?.renderMark);
+const RadioGroup = getModule(m => m?.Sizes && m.toString?.()?.includes?.("radioItemClassName"));
 class Radio extends BdApi.React.Component {
     constructor(props) {
         super(props);
@@ -65,16 +66,17 @@ module.exports = class PinchToZoom {
         this.initialize_mode();
     }
     initialize_mode() {
-        const webFrame = require('electron').webFrame;
+        // const webFrame = require('electron').webFrame;
         BdApi.Patcher.unpatchAll('PinchToZoom');
-        webFrame.setVisualZoomLevelLimits(1, 1);
+        // webFrame.setVisualZoomLevelLimits(1,1);
         const mode = this.get_setting('mode');
         switch (mode) {
             case Mode.IMAGES:
                 this.patch_image_modal();
                 break;
             case Mode.WHOLE_APP_NATIVE:
-                webFrame.setVisualZoomLevelLimits(1, this.get_setting('zoom_limit'));
+                // TODO: Fix or remove
+                // webFrame.setVisualZoomLevelLimits(1,this.get_setting('zoom_limit'));
                 break;
             case Mode.WHOLE_APP_EMULATED:
                 // TODO: Emulated whole app zooming for systems that don't support it natively.
@@ -234,7 +236,7 @@ module.exports = class PinchToZoom {
                     },
                     {
                         value: Mode.WHOLE_APP_NATIVE,
-                        name: 'Whole App'
+                        name: 'Whole App (CURRENTLY NON-FUNCTIONAL)'
                     },
                     // {
                     //     value: Mode.WHOLE_APP_EMULATED,

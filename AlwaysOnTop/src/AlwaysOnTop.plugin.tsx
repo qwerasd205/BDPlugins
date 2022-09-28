@@ -2,21 +2,23 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.2.0
+ * @version 1.2.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=611
  */
 
+const { getModule, Filters: { byProps } } = BdApi.Webpack;
+
 const
     FormTitle: React.ComponentClass
-        = BdApi.findModuleByDisplayName('FormTitle'),
+        = getModule(byProps('Tags', 'Sizes')),
     FormText: React.ComponentClass
-        = BdApi.findModuleByDisplayName('FormText'),
+        = getModule(m => m?.Sizes?.SIZE_32 && m.Colors),
     FormDivider: React.ComponentClass
-        = BdApi.findModuleByDisplayName('FormDivider'),
+        = getModule(m => m?.toString?.()?.includes?.('().divider')),
     SwitchItem: React.FunctionComponent<
             {onChange: Function, note: string, value: boolean}
-        > = BdApi.findModuleByDisplayName('SwitchItem');
+        > = getModule(m => m?.toString?.()?.includes?.("helpdeskArticleId"));
 
 const Switch: React.FunctionComponent<{onChange: Function, defaultValue: boolean, note: string}>
     = ({onChange, defaultValue, note, children}) => {
