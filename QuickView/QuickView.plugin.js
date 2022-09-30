@@ -2,50 +2,60 @@
  * @name QuickView
  * @author Qwerasd
  * @description View avatars, icons, banners, thumbnails, and emojis with alt + click.
- * @version 1.0.0
+ * @version 1.0.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
 const { Patcher, Webpack: { getModule, waitForModule, Filters: { byProps } } } = BdApi;
-const yoink = (f, skip = 0) => {
-    return new Promise((resolve, reject) => {
-        const unpatch = BdApi.Patcher.after('YOINK', BdApi.React, 'createElement', (that, args, ret) => {
-            if (!skip) {
-                resolve(args[0]);
-                unpatch();
-            }
-            skip--;
-        });
-        try {
-            f();
+const logError = (...err) => {
+    console.error('[QuickView]', ...err);
+};
+const walkTree = (elem, filter, keys = ['child', 'alternate', 'sibling', 'return'], seen = new WeakSet()) => {
+    if (elem == null)
+        return false;
+    if (seen.has(elem))
+        return false;
+    if (filter(elem))
+        return elem;
+    seen.add(elem);
+    for (const key of keys) {
+        if (elem[key] != null) {
+            const res = walkTree(elem[key], filter, keys, seen);
+            if (res)
+                return res;
         }
-        catch (e) {
-            reject(e);
-        }
-        unpatch();
-    });
+    }
+    return false;
+};
+const getRenderedChildType = (c, f, props = {}) => {
+    // Create a temporary root to render our parent component in.
+    const root = document.createElement('div');
+    // Create an instance of the component and render it in our root.
+    BdApi.ReactDOM.render(BdApi.React.createElement(c, props), root);
+    // Grab the internal fiber from the root;
+    const fiber = root.__reactContainer$;
+    // Walk the tree from the fiber until we find a type matching our filter `f`
+    const result = walkTree(fiber, e => e.type && (typeof e.type !== 'string') && f(e.type));
+    // ! Clean up the React DOM now that we have what we need ! //
+    BdApi.ReactDOM.unmountComponentAtNode(root);
+    return result && result.type;
 };
 // we keep a single LazyImageZoomable around and just change its props whenever
 // we need to get it to trigger a specific image modal
 let instance;
-(async () => {
-    try {
-        const Stage1 = getModule(m => m?.toString?.()?.includes?.('disableAltTextDisplay'));
-        const Stage2 = (await yoink(() => Stage1({})));
-        const e = document.createElement('div');
-        const LazyImageZoomable = (await yoink(() => {
-            BdApi.ReactDOM.render(BdApi.React.createElement(Stage2, { src: '' }), e);
-        }, 1));
-        BdApi.ReactDOM.unmountComponentAtNode(e);
-        instance = new (LazyImageZoomable.bind({ stateNode: {} }))({
-            renderLinkComponent: p => BdApi.React.createElement('a', p),
-            src: ''
-        });
-    }
-    catch (e) {
-        logError('Failed to create LazyImageZoomable instance :( ERROR:', e);
-    }
-})();
+try {
+    const ImageAttachment = getModule(m => m?.toString?.()?.includes?.('disableAltTextDisplay'));
+    const LazyImageZoomable = getRenderedChildType(ImageAttachment, t => t.defaultProps?.autoPlay != null, { src: '' });
+    if (!LazyImageZoomable)
+        throw 'Could not find type as child of ImageAttachment -- I guess the structure must have changed.';
+    instance = new (LazyImageZoomable.bind({ stateNode: {} }))({
+        renderLinkComponent: p => BdApi.React.createElement('a', p),
+        src: ''
+    });
+}
+catch (e) {
+    logError('Failed to create LazyImageZoomable instance :( ERROR:', e);
+}
 const openModal = (src, width, height, placeholder = src, animated = false) => {
     Object.assign(instance.props, {
         src, width, height, animated, shouldAnimate: true
@@ -76,28 +86,6 @@ const FILTERS = {
     MediaPlayer: m => m?.prototype?.render?.toString?.()?.includes?.('"mediaPlayerClassName","poster"'),
 };
 const GUILDS_LIST = document.querySelector('ul[data-list-id="guildsnav"]');
-const walkTree = (elem, filter, keys = ['child', 'alternate', 'sibling', 'return'], seen = new WeakSet()) => {
-    if (elem == null)
-        return false;
-    if (typeof elem !== 'object')
-        return false;
-    if (seen.has(elem))
-        return false;
-    if (filter(elem))
-        return elem;
-    seen.add(elem);
-    for (const key of keys) {
-        if (elem[key] != null) {
-            const res = walkTree(elem[key], filter, keys, seen);
-            if (res)
-                return res;
-        }
-    }
-    return false;
-};
-const logError = (...err) => {
-    console.error('[QuickView]', ...err);
-};
 module.exports = class QuickView {
     start() {
         // classname -> selector (e.g. "foo bar" -> ".foo.bar")
@@ -409,14 +397,14 @@ module.exports = class QuickView {
             });
         });
         waitForModule(FILTERS.Emoji, { signal })
-            .then(async (EmojiWrapper) => {
+            .then(EmojiWrapper => {
             if (!EmojiWrapper)
                 return;
-            const e = document.createElement('div');
-            const Emoji = (await yoink(() => BdApi.ReactDOM.render(BdApi.React.createElement(EmojiWrapper), e), 1));
-            BdApi.ReactDOM.unmountComponentAtNode(e);
-            if (!Emoji)
+            const Emoji = getRenderedChildType(EmojiWrapper, t => t.prototype?.render);
+            if (!Emoji) {
+                logError(`Can't find Emoji in EmojiWrapper -- structure must have changed, maybe it's a Function component now :(`);
                 return;
+            }
             Patcher.before('QuickView', Emoji.prototype, 'render', (that) => {
                 try { // EMOJIS
                     Patcher.after('QuickView', that.props, 'onClick', (_, [e]) => {
