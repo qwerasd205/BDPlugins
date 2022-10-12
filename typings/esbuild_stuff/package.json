@@ -1,0 +1,8 @@
+{
+    "name": "esbuild_stuff",
+    "version": "0.0.1",
+    "description": "Make TypeScript linter not complain about non-js imports that ESBuild allows.",
+    "author": "Qwerasd",
+    "license": "UNLICENSED",
+    "typings": "index.d.ts"
+}

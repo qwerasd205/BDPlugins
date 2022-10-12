@@ -9,10 +9,18 @@
         "typeRoots": [
             "./node_modules/@types",
             "./typings"
-        ]
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "utils": [
+                "./utils"
+            ]
+        }
     },
     "include": [
         "./*/src/*",
+        "./utils/*",
+        "./utils/*/*",
         "./templates/*"
     ],
 }

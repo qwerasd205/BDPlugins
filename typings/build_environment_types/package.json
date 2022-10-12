@@ -1,0 +1,8 @@
+{
+    "name": "build_environment_types",
+    "version": "0.0.1",
+    "description": "Build Environment Types",
+    "author": "Qwerasd",
+    "license": "UNLICENSED",
+    "typings": "index.d.ts"
+}
