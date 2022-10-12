@@ -2,70 +2,43 @@
  * @name QuickView
  * @author Qwerasd
  * @description View avatars, icons, banners, thumbnails, and emojis with alt + click.
- * @version 1.0.1
+ * @version 1.1.0
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
 
-import type { Fiber } from 'react-reconciler';
+import { React, Patcher, getModule, waitForModule, byProps, DOM } from 'utils/BdApi';
 
-const { Patcher, Webpack: { getModule, waitForModule, Filters: { byProps } }} = BdApi;
+import { walkTree, getKey } from 'utils/utils';
+import { getRenderedChildType } from 'utils/react';
+
+import {
+    ChannelListHeaderFilter,
+    FriendsListAvatarFilter,
+    VoiceCallAvatarFilter,
+    PopoutHandlerFilter,
+    MediaPlayerFilter,
+    ListAvatarFilter,
+    AvatarFilter,
+    BannerFilter,
+    EmbedFilter,
+    EmojiFilter,
+
+    EXPORTS_RichPresenceFilter
+} from 'utils/modules/filters';
+
+import { asyncCSS } from 'utils/css';
+import { css } from './style.scss';
 
 const logError = (...err) => {
     console.error('[QuickView]', ...err);
-}
-
-type ObjKey = string | number | symbol;
-
-const walkTree = <T extends {}>(
-    elem: T,
-    filter: (o: any) => boolean,
-    keys: ObjKey[] = ['child', 'alternate', 'sibling', 'return'],
-    seen = new WeakSet<object>()
-): any => {
-    if (elem == null) return false;
-    if (seen.has(elem)) return false;
-
-    if (filter(elem)) return elem;
-
-    seen.add(elem);
-
-    for (const key of keys) {
-        if (elem[key] != null) {
-            const res = walkTree(elem[key], filter, keys, seen);
-            if (res) return res;
-        }
-    }
-
-    return false;
-};
-
-type Component = React.FunctionComponent | React.ComponentClass;
-
-const getRenderedChildType = (c: Component, f: (c: any) => boolean, props = {}): Component | false => {
-    // Create a temporary root to render our parent component in.
-    const root = document.createElement('div') as (HTMLDivElement & { __reactContainer$: Fiber });
-
-    // Create an instance of the component and render it in our root.
-    BdApi.ReactDOM.render(BdApi.React.createElement(c, props), root);
-
-    // Grab the internal fiber from the root;
-    const fiber = root.__reactContainer$;
-
-    // Walk the tree from the fiber until we find a type matching our filter `f`
-    const result = walkTree(fiber, e => e.type && (typeof e.type !== 'string') && f(e.type));
-
-    // ! Clean up the React DOM now that we have what we need ! //
-    BdApi.ReactDOM.unmountComponentAtNode(root);
-
-    return result && result.type;
 }
 
 // we keep a single LazyImageZoomable around and just change its props whenever
 // we need to get it to trigger a specific image modal
 let instance;
 try {
-    const ImageAttachment = getModule(m => m?.toString?.()?.includes?.('disableAltTextDisplay'));
+    const ImageAttachment = getModule(m => m?.toString?.()?.includes?.('disableAltTextDisplay'), { searchExports: true });
 
     const LazyImageZoomable = getRenderedChildType(ImageAttachment, t => t.defaultProps?.autoPlay != null, {src: ''});
 
@@ -74,7 +47,7 @@ try {
     instance = new (
         LazyImageZoomable.bind({stateNode: {}})
     )({
-        renderLinkComponent: p => BdApi.React.createElement('a', p),
+        renderLinkComponent: p => React.createElement('a', p),
         src: ''
     });
 } catch (e) {
@@ -88,70 +61,47 @@ const openModal = (src: string, width: number, height: number, placeholder = src
     instance.onZoom(new MouseEvent('click'), {placeholder});
 }
 
-const { avatarHoverTarget }     = getModule(byProps('avatarHoverTarget'));
-const { hasBanner }             = getModule(byProps('animatedContainer', 'hasBanner'));
-const { embedAuthorIcon }       = getModule(byProps('embedAuthorIcon'));
-const { bannerImg }             = getModule(byProps('bannerImg'));
-const { avatar: dmlist_avatar } = getModule(byProps('avatar', 'nameAndDecorators'));
-const { avatar: chat_avatar }   = getModule(byProps('avatar', 'username', 'zalgo'));
-const { blobContainer: server } = getModule(byProps('blobContainer', 'pill'));
-const { reactionInner }         = getModule(byProps('reactionInner'));
-const { peopleListItem }        = getModule(byProps('peopleListItem'));
-const { roleIcon }              = getModule(byProps('roleIcon', 'clickable'));
-const { imageContent }          = getModule(byProps('imageContent', 'clickCTA'));
-const { emojiContainer }        = getModule(m => m.emojiContainer && Object.keys(m).length === 1);
-const { wrapperPaused, wrapperControlsHidden } = getModule(byProps('wrapperPaused'));
-const { embedVideo, embedVideoActions }        = getModule(byProps('embedVideoActions'));
-
-const FILTERS = {
-    ChannelListHeader:   m => m?.type?.toString?.()?.includes?.('hasCommunityInfoSubheader'),
-    PrivateChannelRoute: m => m?.render?.toString?.()?.includes?.('"innerRef"'),
-    PopoutHandler:       m => m?.Align && m.Positions && m.contextType && m.defaultProps?.autoInvert != null,
-    Embed:               m => m?.prototype?.renderAuthor && m.prototype.renderMedia,
-    Emoji:               m => m?.toString?.()?.includes?.('autoplay,reduceMotion:'),
-    FriendsListAvatar:   m => m?.type?.toString?.()?.includes?.('["user","size","animate","aria-hidden"]'),
-    MediaPlayer:         m => m?.prototype?.render?.toString?.()?.includes?.('"mediaPlayerClassName","poster"'),
-};
-
 const GUILDS_LIST = document.querySelector('ul[data-list-id="guildsnav"]');
+
+const sizeImage = (src: string, new_size: number): string => {
+    const parsed = new URL(src, document.location.origin);
+
+    if (parsed.host !== 'cdn.discordapp.com') return src;
+
+    parsed.searchParams.set('size', `${new_size}`);
+
+    return parsed.toString();
+}
 
 export = class QuickView {
     
     abort_controller: AbortController;
 
     start() {
-        // classname -> selector (e.g. "foo bar" -> ".foo.bar")
-        const s = (className: string) => '.' + className?.split(' ').join('.');
+        this.abort_controller = new AbortController();
 
-        BdApi.injectCSS('QuickView', /*CSS*/`
-            ${s(hasBanner)} { z-index: 10; }
-
-            [class*="avatar"] rect { pointer-events: none; }
-
-            header [role="img"][class*="avatar"] { cursor: zoom-in; }
-            [class*="bannerPremium"]             { cursor: zoom-in; }
-            ${s(embedAuthorIcon)}                { cursor: zoom-in; }
-            ${s(bannerImg)}                      { cursor: zoom-in; }
-            
-            body.quickview-alt-key ${s(chat_avatar)}         { cursor: zoom-in; }
-            body.quickview-alt-key ${s(avatarHoverTarget)}   { cursor: zoom-in; }
-            body.quickview-alt-key ${s(server)} div          { cursor: zoom-in; }
-            body.quickview-alt-key ${s(dmlist_avatar)}       { cursor: zoom-in; }
-            body.quickview-alt-key ${s(dmlist_avatar)} > div { cursor: zoom-in; }
-            body.quickview-alt-key ${s(roleIcon)}            { cursor: zoom-in; }
-
-            body.quickview-alt-key ${s(embedVideo)}                                                       { cursor: zoom-in; }
-            body.quickview-alt-key ${s(embedVideo)}:not(${s(imageContent)}) *                        { pointer-events: none; }
-            body.quickview-alt-key ${s(embedVideo)}:not(${s(imageContent)}):hover > ${s(embedVideoActions)} { display: none; }
-
-            body.quickview-alt-key :is(${s(wrapperPaused)},${s(wrapperControlsHidden)})                    { cursor: zoom-in; }
-            body.quickview-alt-key :is(${s(wrapperPaused)},${s(wrapperControlsHidden)}):hover > video { pointer-events: none; }
-            body.quickview-alt-key :is(${s(wrapperPaused)},${s(wrapperControlsHidden)}):hover > div          { display: none; }
-            
-            body.quickview-alt-key ${s(peopleListItem)} div[class*="avatar"] { cursor: zoom-in; }
-
-            body.quickview-alt-key :is(${s(emojiContainer)}, ${s(reactionInner)}) img { cursor: zoom-in; }
-        `);
+        asyncCSS('QuickView', this.abort_controller.signal, css, [
+            [['avatarHoverTarget'        ], byProps('avatarHoverTarget')],
+            [['hasBanner'                ], byProps('animatedContainer', 'hasBanner')],
+            [['embedAuthorIcon'          ], byProps('embedAuthorIcon')],
+            [['bannerImg'                ], byProps('bannerImg')],
+            [{avatar: 'chat_avatar'      }, byProps('avatar', 'username', 'zalgo')],
+            [{avatar: 'users_avatar'     }, byProps('avatar', 'clickable', 'subText', 'nameAndDecorators')],
+            [{avatar: 'dmlist_avatar'    }, byProps('avatar', 'content', 'nameAndDecorators')],
+            [{blobContainer: 'server'    }, byProps('blobContainer', 'pill')],
+            [['reactionInner'            ], byProps('reactionInner')],
+            [['peopleListItem'           ], byProps('peopleListItem')],
+            [['roleIcon'                 ], byProps('roleIcon', 'clickable')],
+            [['imageContent'             ], byProps('imageContent', 'clickCTA')],
+            [['listAvatar'               ], byProps('listName', 'listAvatar')],
+            [['avatarWrapper'            ], byProps('background', 'avatarWrapper')],
+            [['pointer'                  ], byProps('cursorDefault', 'pointer')],
+            [['activity'                 ], byProps('activity', 'buttonColor')],
+            [['userAvatar'               ], byProps('userAvatar', 'audienceIcon')],
+            [['wrapperPaused', 'wrapperControlsHidden'], byProps('wrapperPaused')],
+            [['embedVideo', 'embedVideoActions'       ], byProps('embedVideoActions')],
+            [['gameIcon', 'screenshareIcon'           ], byProps('gameIcon', 'screenshareIcon')],
+        ]);
         this.addPatches();
         GUILDS_LIST.addEventListener('click', this.guildsListListener);
         document.addEventListener('mousemove', this.trackAltKey);
@@ -168,10 +118,9 @@ export = class QuickView {
     }
 
     addPatches () {
-        this.abort_controller = new AbortController();
         const { signal } = this.abort_controller;
 
-        // TODO
+        // Quickview Targets
         // [X] Modal Banner
         // [X] Modal Avatar
         // [X] Popout Banner
@@ -180,71 +129,26 @@ export = class QuickView {
         // [X] Server Icon
         // [X] Chat Avatar
         // [X] DM List Avatar
-        // [X] User List Avatar
+        // [X] User List Avatar (FIXED)
         // [X] Embed Author
         // [X] Emoji
         // [X] Reaction
-        // [X] Friends List Avatar (NEW)
-        // [X] Role Icons          (NEW)
-        // [X] Video Thumbnails    (NEW)
+        // [X] Friends List Avatar
+        // [X] Role Icons
+        // [X] Video Thumbnails
+        // [X] (NEW) Mutual Server Icon
+        // [X] (NEW) Mutual Friend Avatar
+        // [X] (NEW) Group VC Avatar
+        // [X] (NEW) Channel List VC Avatar
+        // [X] (NEW) Popout Non-Server Avatar
+        // [X] (NEW) Modal Server Avatar
+        // [X] (NEW) Modal Rich Presence Image
+        // [X] (NEW) Popout Rich Presence Image
 
-        Patcher.before('QuickView', BdApi.ReactDOM, 'createPortal', (that, [elem]) => {
-            if (elem == null) return;
-
-            const owner = elem._owner;
-
-            if (!owner) return;
-
-            const is_modal = owner.stateNode?.props && ('modalKey' in owner.stateNode.props);
-            
-            try { // POPOUT/MODAL BANNERS
-                const banner = walkTree(owner, e => e.memoizedProps?.hasBannerImage, ['child', 'sibling']);
-                if (banner) {
-                    const banner_el = walkTree(banner, e => e.memoizedProps?.style?.backgroundImage, ['child', 'sibling'])?.stateNode;
-                    if (banner_el && !banner_el.quickview_patched) {
-                        const banner_url = banner_el.style.backgroundImage.slice(5, -2);
-                        banner_el.addEventListener('click', (e: MouseEvent) => {
-                            if (e.target !== banner_el) return;
-                            openModal(
-                                banner_url.slice(0, banner_url.indexOf('?')) + '?size=4096',
-                                4096, 1638,
-                                banner_url
-                            );
-                        });
-                        banner_el.quickview_patched = true;
-                    }
-                }
-            } catch (e) {
-                logError('Error during banner patch:', e);
-            }
-
-            try { // POPOUT/MODAL AVATARS
-                const avatar = walkTree(owner, e => (e.memoizedProps != null && typeof e.memoizedProps === 'object') && ('avatarDecoration' in e.memoizedProps), ['child', 'sibling']);
-                if (avatar) {
-                    const avatar_el = walkTree(avatar, e => e.memoizedProps?.style?.width, ['child'])?.stateNode;
-                    if (avatar_el && !avatar_el.quickview_patched) {
-                        const avatar_url = avatar.memoizedProps.src;
-                        avatar_el.addEventListener('click', (e: MouseEvent) => {
-                            if (!is_modal && !e.altKey) return;
-                            e.stopPropagation();
-                            openModal(
-                                avatar_url.slice(0, avatar_url.indexOf('?')) + '?size=4096',
-                                4096, 4096,
-                                avatar_url
-                            );
-                        });
-                        avatar_el.quickview_patched = true;
-                    }
-                }
-            } catch (e) {
-                logError('Error during avatar patch:', e);
-            }
-        });
-
-        waitForModule(FILTERS.ChannelListHeader, {signal})
+        waitForModule(ChannelListHeaderFilter, {signal})
             .then(ChannelListHeader => {
                 if (!ChannelListHeader) return;
-                Patcher.after('QuickView', ChannelListHeader, 'type', (that, [props], ret) => {
+                Patcher.after(ChannelListHeader, 'type', (that, [props]) => {
                     try { // SERVER BANNERS
                         if (!props.bannerVisible) return;
         
@@ -263,7 +167,7 @@ export = class QuickView {
                                 // in this case we just exit out gracefully and don't stop propagation.
                                 e.stopPropagation();
                                 openModal(
-                                    banner_url.slice(0, banner_url.indexOf('?')) + '?size=4096',
+                                    sizeImage(banner_url, 4096),
                                     img.naturalWidth,
                                     img.naturalHeight,
                                     banner_url
@@ -277,44 +181,160 @@ export = class QuickView {
                 });
             });
 
-        waitForModule(FILTERS.PrivateChannelRoute, {signal})
-            .then(PrivateChannelRoute => {
-                if (!PrivateChannelRoute) return;
-                Patcher.before('QuickView', PrivateChannelRoute, 'render', (that, [props]) => {
-                    try { // DMS LIST AVATARS
+        waitForModule(AvatarFilter, { signal, defaultExport: false })
+            .then(AvatarModule => {
+                if (!AvatarModule) return;
+                const key = getKey(AvatarModule, AvatarFilter);
+                if (!key) {
+                    logError("Wtf... can't find key for default in avatar module...", AvatarModule);
+                    return;
+                }
+                const memo_key = getKey(AvatarModule, byProps('compare', 'type'));
+                const patch = (that, [props]) => {
+                    try { // AVATARS
+                        const avatar_url = props.src;
+                        if (!avatar_url) return;
+
+                        const is_popout = !('className' in props) || ('statusBackdropColor' in props);
+                        
                         const o_onClick = props.onClick?.bind(props) ?? (() => {});
                         props.onClick = (e: React.MouseEvent) => {
-                            try {
-                                if (!e.altKey) return o_onClick(e);
+                            if (is_popout && !e.altKey) return o_onClick(e);
+                            if (e.target !== e.currentTarget) return o_onClick(e);
 
-                                const img = walkTree(e.target, e => e instanceof HTMLImageElement, ['firstElementChild']) as HTMLImageElement;
-                                if (!img) return o_onClick(e);
-
-                                const avatar_url = img.currentSrc;
-                                
-                                e.stopPropagation();
-                                e.preventDefault();
-                                openModal(
-                                    img.currentSrc.slice(0, img.currentSrc.indexOf('?')) + '?size=4096',
-                                    4096, 4096,
-                                    avatar_url
-                                );
-                                return;
-                            } catch (e) {
-                                logError('Error during DM channel click listener:', e);
-                            }
-                            return o_onClick(e)
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal(
+                                sizeImage(avatar_url, 4096),
+                                4096, 4096,
+                                avatar_url
+                            );
                         }
                     } catch (e) {
-                        logError('Error during DM channel patch:', e);
+                        logError('Error during user avatar patch:', e);
+                    }
+                }
+                Patcher.before(AvatarModule, key, patch);
+                if (memo_key) {
+                    Patcher.before(AvatarModule[memo_key], 'type', patch);
+                } else {
+                    logError("Can't find key for decorated avatar in avatar module D: ...", AvatarModule);
+                }
+            });
+
+        waitForModule(ListAvatarFilter, { signal })
+            .then(ListAvatar => {
+                if (!ListAvatar) return;
+                Patcher.before(ListAvatar.prototype, 'render', (that) => {
+                    try { // MUTUAL SERVER/FRIEND ICONS
+                        const { props } = that;
+                        const icon_url = props.guild?.getIconURL?.(props.size);
+                        if (!icon_url) return;
+                        
+                        const o_onClick = props.onClick?.bind(props) ?? (() => {});
+                        props.onClick = (e: React.MouseEvent) => {
+                            if (!e.altKey) return o_onClick(e);
+
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal(
+                                sizeImage(icon_url, 4096),
+                                4096, 4096,
+                                icon_url
+                            );
+                        }
+                    } catch (e) {
+                        logError('Error during mutual server icon patch:', e);
                     }
                 });
             });
 
-        waitForModule(FILTERS.PopoutHandler, {signal})
+        waitForModule(EXPORTS_RichPresenceFilter, { signal, searchExports: true })
+            .then(RichPresence => {
+                if (!RichPresence) return;
+                Patcher.after(RichPresence.prototype, 'render', (that, _, ret) => {
+                    try { // RICH PRESENCE IMAGES
+                        if (!ret) return;
+
+                        const { props } = ret;
+                        
+                        props.onClick = (e: React.MouseEvent) => {
+                            const img_url = ((el: HTMLElement) => {
+                                if (el instanceof HTMLImageElement) return el.currentSrc;
+                                if (el.style?.backgroundImage) return el.style.backgroundImage.slice(5, -2);
+                            })(e.target as HTMLElement);
+                            if (!img_url) return;
+
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal(
+                                sizeImage(img_url, 4096),
+                                4096, 4096,
+                                img_url
+                            );
+                        }
+                    } catch (e) {
+                        logError('Error during rich presence patch:', e);
+                    }
+                });
+            });
+
+        waitForModule(VoiceCallAvatarFilter, { signal })
+            .then(VoiceCallAvatar => {
+                if (!VoiceCallAvatar) return;
+                Patcher.after(VoiceCallAvatar.prototype, 'renderVoiceCallAvatar', (that, _, ret) => {
+                    try { // VOICE CALL AVATARS
+                        const { props } = that;
+                        const avatar_url = props.src;
+                        if (!avatar_url) return;
+
+                        ret.props.onClick = (e: React.MouseEvent) => {
+                            openModal(
+                                sizeImage(avatar_url, 4096),
+                                4096, 4096,
+                                avatar_url
+                            );
+                        }
+                    } catch (e) {
+                        logError('Error during voice call avatar patch:', e);
+                    }
+                });
+            });
+
+        waitForModule(BannerFilter, { signal, defaultExport: false })
+            .then(BannerModule => {
+                if (!BannerModule) return;
+                const key = getKey(BannerModule, BannerFilter);
+                if (!key) {
+                    logError("Wtf... can't find key for default in banner module...", BannerModule);
+                    return;
+                }
+                Patcher.before(BannerModule, key, (that, [props]) => {
+                    try { // BANNERS
+                        if (!props.hasBannerImage) return;
+                        const banner_props = props.children.props;
+                        const banner_url = banner_props.style.backgroundImage.slice(4, -1);
+                        const o_onClick = banner_props.onClick?.bind(banner_props) ?? (() => {});
+                        banner_props.onClick = (e: React.MouseEvent) => {
+                            if (e.target !== e.currentTarget) return o_onClick(e);
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal(
+                                sizeImage(banner_url, 4096),
+                                4096, 1638,
+                                banner_url
+                            );
+                        }
+                    } catch (e) {
+                        logError('Error during user banner patch:', e);
+                    }
+                });
+            });
+        
+        waitForModule(PopoutHandlerFilter, {signal})
             .then(PopoutHandler => {
                 if (!PopoutHandler) return;
-                Patcher.before('QuickView', PopoutHandler.prototype, 'render', (that) => {
+                Patcher.after(PopoutHandler.prototype, 'render', (that) => {
                     try {
                         const message_contents_el = walkTree(that._reactInternals, e => e?.memoizedProps?.className?.startsWith?.('contents-'), ['return'])?.stateNode;
                         if (message_contents_el) {
@@ -327,10 +347,14 @@ export = class QuickView {
                                 img.addEventListener('click', (e: MouseEvent) => {
                                     if (!e.altKey) return;
 
+                                    const src = img.currentSrc || avatar_url;
+                                    // ^^^ img.currentSrc may sometimes be an empty string when gif avatars are slow to load.
+                                    // Fall back to original URL under such circumstances.
+
                                     e.stopPropagation();
                                     e.preventDefault();
                                     openModal(
-                                        img.currentSrc.slice(0, img.currentSrc.indexOf('?')) + '?size=4096',
+                                        sizeImage(src, 4096),
                                         4096, 4096,
                                         avatar_url
                                     );
@@ -340,13 +364,10 @@ export = class QuickView {
                             }
 
                             try { // ROLE ICONS
-                                const img = message_contents_el.querySelector('h2 img') as HTMLImageElement;
+                                const img = message_contents_el.querySelector('img[class^="roleIcon"]') as HTMLImageElement;
                                 if (!img) return;
                                 const icon_url = img.currentSrc;
                                 if (!icon_url) return;
-
-                                const question_idx = icon_url.indexOf('?');
-                                const full_size    = question_idx !== -1 ? icon_url.slice(0, icon_url.indexOf('?')) + '?size=4096' : icon_url;
 
                                 img.addEventListener('click', (e: MouseEvent) => {
                                     if (!e.altKey) return;
@@ -354,7 +375,7 @@ export = class QuickView {
                                     e.stopPropagation();
                                     e.preventDefault();
                                     openModal(
-                                        full_size,
+                                        sizeImage(icon_url, 4096),
                                         img.naturalWidth,
                                         img.naturalHeight,
                                         icon_url
@@ -366,40 +387,37 @@ export = class QuickView {
                             return;
                         }
 
-                        // TODO: Figure out why this doesn't work first try (opens popout, then works after that).
-                        const { domElementRef: { current: dom_node } } = that;
-                        if (dom_node) { // GENERIC / MEMBER LIST AVATARS
-                            const avatar_wrapper_el = (dom_node as HTMLElement).querySelector('[class^="avatar-"]') as HTMLElement;
-                            if (!avatar_wrapper_el) return;
+                        const avatar_el = walkTree(that._reactInternals, e => e?.memoizedProps?.className?.includes?.('avatar-'), ['child', 'sibling'])?.stateNode;
+                        if (avatar_el) {
+                            try {
+                                const avatar_url = avatar_el.style.backgroundImage.slice(5, -2);
+                                if (!avatar_url) return;
 
-                            const img = avatar_wrapper_el.querySelector('img[class^="avatar-"]') as HTMLImageElement;
-                            if (!img) return;
-                            const avatar_url = img.currentSrc;
-                            if (!avatar_url) return;
+                                avatar_el.addEventListener('click', (e: MouseEvent) => {
+                                    if (!e.altKey) return;
 
-                            avatar_wrapper_el.addEventListener('click', (e: MouseEvent) => {
-                                if (!e.altKey) return;
-
-                                e.stopPropagation();
-                                e.preventDefault();
-                                openModal(
-                                    avatar_url.slice(0, avatar_url.indexOf('?')) + '?size=4096',
-                                    4096, 4096,
-                                    avatar_url
-                                );
-                            });
-                            return;
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    openModal(
+                                        sizeImage(avatar_url, 4096),
+                                        4096, 4096,
+                                        avatar_url
+                                    );
+                                });
+                            } catch (e) {
+                                logError('Error during voice avatar patch:', e);
+                            }
                         }
                     } catch (e) {
-                        logError('Error during popout handler patch:', e);
+                        logError('Error during popout handler render patch:', e);
                     }
                 });
             });
         
-        waitForModule(FILTERS.Embed, {signal})
+        waitForModule(EmbedFilter, {signal})
             .then(Embed => {
                 if (!Embed) return;
-                Patcher.after('QuickView', Embed.prototype, 'renderAuthor', (that, args, ret) => {
+                Patcher.after(Embed.prototype, 'renderAuthor', (that, args, ret) => {
                     if (!ret) return;
                     
                     try { // EMBED AUTHOR ICON
@@ -414,7 +432,7 @@ export = class QuickView {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 openModal(
-                                    icon_url,
+                                    sizeImage(icon_url, 4096),
                                     img.naturalWidth,
                                     img.naturalHeight,
                                     icon_url
@@ -428,7 +446,7 @@ export = class QuickView {
                     }
                 });
 
-                Patcher.after('QuickView', Embed.prototype, 'renderVideo', (that, [render_props], ret) => {
+                Patcher.after(Embed.prototype, 'renderVideo', (that, [render_props], ret) => {
                     if (!that || !ret) return;
 
                     if (render_props.gifv) return;
@@ -439,7 +457,7 @@ export = class QuickView {
                         const thumbnail = props?.embed?.thumbnail;
                         if (!thumbnail) return;
 
-                        const thumb_url = thumbnail.proxyUrl;
+                        const thumb_url = thumbnail.proxyURL;
                         if (!thumb_url) return;
 
                         return (<span onClick={(e: React.MouseEvent) => {
@@ -464,7 +482,7 @@ export = class QuickView {
                 });
             });
 
-        waitForModule(FILTERS.Emoji, {signal})
+        waitForModule(EmojiFilter, {signal})
             .then(EmojiWrapper => {
                 if (!EmojiWrapper) return;
 
@@ -475,23 +493,20 @@ export = class QuickView {
                     return;
                 }
 
-                Patcher.before('QuickView', Emoji.prototype, 'render', (that) => {
+                Patcher.before(Emoji.prototype, 'render', (that) => {
                     try { // EMOJIS
-                        Patcher.after('QuickView', that.props, 'onClick', (_, [e]: [React.MouseEvent]) => {
+                        Patcher.after(that.props, 'onClick', (_, [e]: [React.MouseEvent]) => {
                             try {
                                 if (!e.altKey) return;
 
                                 const img = e.target as HTMLImageElement;
                                 const emoji_url = img.currentSrc;
-                                if (!emoji_url) return;
-
-                                const question_idx = emoji_url.indexOf('?');
-                                const full_size    = question_idx !== -1 ? emoji_url.slice(0, emoji_url.indexOf('?')) + '?size=4096' : emoji_url;
+                                if (!emoji_url) throw 'Error getting image source';
 
                                 e.stopPropagation();
                                 e.preventDefault();
                                 openModal(
-                                    full_size,
+                                    sizeImage(emoji_url, 4096),
                                     img.naturalWidth,
                                     img.naturalHeight,
                                     emoji_url
@@ -507,10 +522,10 @@ export = class QuickView {
             });
 
         
-        waitForModule(FILTERS.FriendsListAvatar, {signal})
+        waitForModule(FriendsListAvatarFilter, {signal})
             .then(FriendsListAvatar => {
                 if (!FriendsListAvatar) return;
-                Patcher.after('QuickView', FriendsListAvatar, 'type', (that, _, ret) => {
+                Patcher.after(FriendsListAvatar, 'type', (that, _, ret) => {
                     try { // FRIENDS LIST AVATARS
                         const { props } = ret;
                         const o_onClick = props.onClick?.bind(props) ?? (() => {});
@@ -522,11 +537,12 @@ export = class QuickView {
                                 if (!img) return o_onClick(e);
 
                                 const avatar_url = img.currentSrc;
+                                if (!avatar_url) throw 'Error getting image source';
                                 
                                 e.stopPropagation();
                                 e.preventDefault();
                                 openModal(
-                                    avatar_url.slice(0, avatar_url.indexOf('?')) + '?size=4096',
+                                    sizeImage(avatar_url, 4096),
                                     4096, 4096,
                                     avatar_url
                                 );
@@ -534,7 +550,7 @@ export = class QuickView {
                             } catch (e) {
                                 logError('Error during friends list avatar click listener:', e);
                             }
-                            return o_onClick(e)
+                            return o_onClick(e);
                         }
                     } catch (e) {
                         logError('Error during friends list avatar patch:', e);
@@ -542,11 +558,11 @@ export = class QuickView {
                 });
             });
 
-        waitForModule(FILTERS.MediaPlayer, {signal})
+        waitForModule(MediaPlayerFilter, {signal})
             .then((MediaPlayer) => {
                 if (!MediaPlayer) return;
 
-                Patcher.after('QuickView', MediaPlayer.prototype, 'render', (that, _, ret) => {
+                Patcher.after(MediaPlayer.prototype, 'render', (that, _, ret) => {
                     if(!that || !ret) return;
 
                     try { // VIDEO UPLOAD
@@ -591,7 +607,7 @@ export = class QuickView {
 
             e.stopPropagation();
             openModal(
-                icon_url.slice(0, icon_url.indexOf('?')) + '?size=4096',
+                sizeImage(icon_url, 4096),
                 4096, 4096,
                 icon_url
             );
@@ -601,9 +617,9 @@ export = class QuickView {
     }
 
     stop() {
-        BdApi.clearCSS('QuickView');
+        DOM.removeStyle();
         this.abort_controller?.abort();
-        Patcher.unpatchAll('QuickView');
+        Patcher.unpatchAll();
         GUILDS_LIST.removeEventListener('click', this.guildsListListener);
         document.removeEventListener('mousemove', this.trackAltKey);
         document.removeEventListener('keydown', this.trackAltKey);

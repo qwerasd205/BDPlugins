@@ -1,0 +1,76 @@
+#_:hasBanner { z-index: 10; }
+
+[class*="avatar" i] { 
+    rect {
+        pointer-events: none;
+    }
+
+    &:is(#_:pointer) {
+        cursor: zoom-in;
+    }
+}
+
+header > svg+div [class*="avatar"],
+#_:avatarWrapper:is(#_:pointer),
+[class*="bannerPremium"],
+#_:embedAuthorIcon,
+#_:bannerImg {
+    cursor: zoom-in;
+}
+
+body.quickview-alt-key {
+    #_:peopleListItem div[class*="avatar"],
+    #_:roleIcon,
+    #_:server div,
+    #_:chat_avatar,
+    #_:listAvatar,
+    #_:userAvatar,
+    img.emoji {
+        cursor: zoom-in;
+    }
+
+
+    #_:activity,
+    div[class*="Activity-"] {
+        img,
+        #_:gameIcon,
+        #_:screenshareIcon {
+            cursor: zoom-in;
+        }
+    }
+
+
+    #_:users_avatar,
+    #_:dmlist_avatar,
+    #_:avatarHoverTarget {
+        &, & > div {
+            cursor: zoom-in;
+        }
+    }
+    
+    #_:embedVideo {
+        cursor: zoom-in;
+        &:not(#_:imageContent) {
+            * {
+                pointer-events: none;;
+            }
+            &:hover > #_:embedVideoActions {
+                display: none;
+            }
+        }
+    }
+    
+    :is(#_:wrapperPaused,#_:wrapperControlsHidden) {
+        cursor: zoom-in;
+
+        &:hover {
+            > video {
+                pointer-events: none;
+            }
+            > div {
+                display: none;
+            }
+        }
+    }
+}
+
