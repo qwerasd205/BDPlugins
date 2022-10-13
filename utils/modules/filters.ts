@@ -13,6 +13,7 @@ export const FriendsListAvatarFilter: FilterFn = m => hasSubstrings(m.type?.toSt
 export const EmojiFilter: FilterFn             = m => hasSubstrings(m.toString?.(), 'autoplay,reduceMotion:');
 export const BannerFilter: FilterFn            = m => hasSubstrings(m.toString?.(), 'overrideAvatarDecorationURL');
 export const AvatarFilter: FilterFn            = m => hasSubstrings(m.toString?.(), 'typingIndicatorRef', 'statusBackdropColor');
+export const MessageFilter: FilterFn           = m => hasSubstrings(m.toString?.(), '"childrenSystemMessage"');
 export const GameIconFilter: FilterFn          = m => m.Sizes?.XSMALL && hasSubstrings(m.toString?.(), '"skuId","pid"');
 
 export const EXPORTS_RichPresenceFilter: FilterFn         = m => m.prototype?.renderImage && m.prototype.renderGameImage;
