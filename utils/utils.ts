@@ -45,6 +45,27 @@ export const Debouncer = (delay: number) => {
     }
 }
 
+export const SingletonListener = <T extends EventTarget>(target: T) => {
+    type EventTypesForTarget = Parameters< T['addEventListener']>[0];
+    const listeners = new Map<EventTypesForTarget, EventListenerOrEventListenerObject>();
+    return {
+        setListener: ((event, callback, options?) => {
+            listeners.set(event, callback);
+            target.addEventListener(event, callback, options);
+        }) as T['addEventListener'],
+        clearListener: (event: EventTypesForTarget) => {
+            target.removeEventListener(event, listeners.get(event));
+            listeners.delete(event);
+        },
+        clearAllListeners: () => {
+            for (const [event, callback] of listeners) {
+                target.removeEventListener(event, callback);
+            }
+            listeners.clear();
+        }
+    }
+}
+
 export const getKey = (module: any, f: FilterFn): string | undefined => {
     for (const key in module) {
         if (f(module[key])) return key;
