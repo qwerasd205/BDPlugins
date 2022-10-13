@@ -33,8 +33,8 @@ declare class BdApi {
     };
 
     Data: {
-        save  : OptionalCaller<(key: string, value: string | number | undefined) => void>;
-        load  : OptionalCaller<(key: string) => string | number | undefined>;
+        save  : OptionalCaller< (key: string, value: any) => void>;
+        load  : OptionalCaller< (key: string) => any >;
         delete: OptionalCaller<(key: string) => void>;
     };
 
