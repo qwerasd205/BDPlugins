@@ -7,6 +7,6 @@
 ## Configurable
 ![PinchToZoomSettings](https://user-images.githubusercontent.com/7241851/147398735-3fbf1635-68a3-4d5f-8829-4087cff70c2c.png)
 ---
-## **Images** mode supports mouse
-- Scroll to zoom.
-- Pan with middle-click or alt-click and drag.
+## Mouse controls
+- Ctrl + scroll to zoom.
+- Pan with middle-click (or alt+click in **Images** mode) and drag.
