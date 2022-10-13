@@ -304,13 +304,14 @@ const specialProcessing = {
                     const old_lineEnd = state.lineEnd;
                     if (
                         node.properties.every(p => 
-                            ['Literal', 'Identifier'].includes(p.value.type)
+                            p.type === 'SpreadElement'
+                            || ['Literal', 'Identifier'].includes(p.value.type)
                             || (
                                 p.value.type === 'ObjectExpression'
                                 && p.value.properties.length <= 3
                                 && p.value.properties.every(pp => ['Literal', 'Identifier'].includes(pp.value.type))
                             )
-                        ) && node.properties.filter(p => !p.shorthand).length <= 2
+                        ) && node.properties.filter(p => !p.shorthand && !p.type === 'SpreadElement').length <= 2
                     ) {
                         state.indent  = '';
                         state.lineEnd = '';
@@ -388,7 +389,7 @@ const specialProcessing = {
                 },
                 ArrayExpression (node, state) { // format big arrays nicely
                     state.write('[');
-                    const multi_line = node.elements.length > 5;
+                    const multi_line = node.elements.length >= 4;
                     let p;
                     if (node.elements.length > 0) {
                         const { elements } = node,
