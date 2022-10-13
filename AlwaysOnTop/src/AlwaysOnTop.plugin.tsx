@@ -2,27 +2,26 @@
  * @name AlwaysOnTop
  * @author Qwerasd
  * @description Keep the Discord window from being hidden under other windows.
- * @version 1.2.1
+ * @version 1.2.2
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=611
  */
 
-const { getModule, Filters: { byProps } } = BdApi.Webpack;
+import { React, getModule, byProps, Data, DOM, UI } from 'utils/BdApi';
 
-const
-    FormTitle: React.ComponentClass
-        = getModule(byProps('Tags', 'Sizes')),
-    FormText: React.ComponentClass
-        = getModule(m => m?.Sizes?.SIZE_32 && m.Colors),
-    FormDivider: React.ComponentClass
-        = getModule(m => m?.toString?.()?.includes?.('().divider')),
-    SwitchItem: React.FunctionComponent<
-            {onChange: Function, note: string, value: boolean}
-        > = getModule(m => m?.toString?.()?.includes?.("helpdeskArticleId"));
+const FormTitle: React.ComponentClass
+    = getModule(byProps('Tags', 'Sizes'));
+const FormText: React.ComponentClass
+    = getModule(m => m?.Sizes?.SIZE_32 && m.Colors);
+const FormDivider: React.ComponentClass
+    = getModule(m => m?.toString?.()?.includes?.('().divider'));
+const SwitchItem: React.FunctionComponent<
+        {onChange: Function, note: string, value: boolean}
+    > = getModule(m => m?.toString?.()?.includes?.("helpdeskArticleId"));
 
 const Switch: React.FunctionComponent<{onChange: Function, defaultValue: boolean, note: string}>
     = ({onChange, defaultValue, note, children}) => {
-        const [value, setValue] = BdApi.React.useState(defaultValue);
+        const [value, setValue] = React.useState(defaultValue);
         const onChangeFunc = (newValue) => {
             onChange(newValue);
             setValue(newValue);
@@ -33,7 +32,7 @@ const Switch: React.FunctionComponent<{onChange: Function, defaultValue: boolean
 const setAlwaysOnTop = (v: boolean): void => {
     //@ts-ignore
     window.DiscordNative.window.setAlwaysOnTop(0, v);
-    BdApi.showToast(`Always on top ${v ? 'enabled' : 'disabled'}.`, {type: v ? 'success' : 'error'});
+    UI.showToast(`Always on top ${v ? 'enabled' : 'disabled'}.`, {type: v ? 'success' : 'error'});
 }
 
 const isMac = process.platform === 'darwin';
@@ -62,7 +61,7 @@ const createKeybindObject = async (e: KeyboardEvent): Promise<Keybind> => {
     };
 }
 
-const { useState, useRef } = BdApi.React;
+const { useState, useRef } = React;
 
 const KeybindRecorder: React.FunctionComponent<{ default: Keybind, onChange: (k: Keybind) => void }> = (props) => {
     const [keybind, setKeybind] = useState(props.default);
@@ -127,9 +126,9 @@ const isMaximized = () =>
     && window.screen.availHeight - window.outerHeight < 4;
 
 export = class AlwaysOnTop {
-    state: boolean = BdApi.loadData('AlwaysOnTop', 'state') ?? true;
+    state: boolean = Data.load('state') ?? true;
 
-    keybind: Keybind = BdApi.loadData('AlwaysOnTop', 'keybind') ?? {
+    keybind: Keybind = Data.load('keybind') ?? {
         location: 0,
         key: 'F11',
         keyName: 'F11',
@@ -142,7 +141,7 @@ export = class AlwaysOnTop {
     boundKeyDown = this.onKeyDown.bind(this);
     boundResize = this.onResize.bind(this);
 
-    disableWhenMaximized = BdApi.loadData('AlwaysOnTop', 'disableWhenMaximized') ?? false;
+    disableWhenMaximized = Data.load('disableWhenMaximized') ?? false;
 
     disabledByMaximization = false;
 
@@ -154,7 +153,7 @@ export = class AlwaysOnTop {
         }
         document.addEventListener('keydown', this.boundKeyDown);
         window.addEventListener('resize', this.boundResize);
-        BdApi.injectCSS('AlwaysOnTop', /* CSS */`
+        DOM.addStyle(/* CSS */`
             .keybind-recorder {
                 color: #fff;
                 background-color: #000;
@@ -196,7 +195,7 @@ export = class AlwaysOnTop {
         setAlwaysOnTop(false);
         document.removeEventListener('keydown', this.boundKeyDown);
         window.removeEventListener('resize', this.boundResize);
-        BdApi.clearCSS('AlwaysOnTop');
+        DOM.removeStyle();
     }
 
     onResize () {
@@ -216,7 +215,7 @@ export = class AlwaysOnTop {
         if (k.key === key && k.ctrl === ctrl && k.alt === alt && k.shift === shift && k.meta === meta) {
             this.state = !this.state;
             setAlwaysOnTop(this.state);
-            BdApi.saveData('AlwaysOnTop', 'state', this.state);
+            Data.save('state', this.state);
         }
     }
 
@@ -227,7 +226,7 @@ export = class AlwaysOnTop {
             <br />
             <KeybindRecorder default={this.keybind} onChange={k => {
                 this.keybind = k;
-                BdApi.saveData('AlwaysOnTop', 'keybind', k);
+                Data.save('keybind', k);
             }}></KeybindRecorder>
             <br /><br />
             <FormDivider />
@@ -235,7 +234,7 @@ export = class AlwaysOnTop {
             <Switch
                 onChange={(value) => {
                     this.disableWhenMaximized = value;
-                    BdApi.saveData('AlwaysOnTop', 'disableWhenMaximized', this.disableWhenMaximized);
+                    Data.save('disableWhenMaximized', this.disableWhenMaximized);
                 }}
                 note="When the window is maximized, disable always on top functionality."
                 defaultValue={this.disableWhenMaximized}
