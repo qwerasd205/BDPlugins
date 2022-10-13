@@ -2,11 +2,13 @@
 // There's probably a better way but '\_(._.)_/'
 declare class BdApi {
     constructor(id: string);
-    [key: string]: any;
-    [key: number]: any;
+    static [key: string]: any;
+    static [key: number]: any;
 
     static React: typeof React;
     static ReactDOM: typeof ReactDOM;
+    React: typeof React;
+    ReactDOM: typeof ReactDOM;
 
     Patcher: {
         after     : OptionalCaller<(module: any, func: string, callback: PatcherCallback) => CancelPatch>;
@@ -46,6 +48,12 @@ declare class BdApi {
             timeout?: number,
             forceShow?: boolean,
         }) => void;
+        createTooltip: (node: HTMLElement, content: string | HTMLElement, options: {
+            style?: "primary"|"info"|"success"|"warn"|"danger",
+            side?: "top"|"right"|"bottom"|"left",
+            preventFlip?: boolean,
+            disabled?: boolean,
+        }) => any
     }
 }
 
