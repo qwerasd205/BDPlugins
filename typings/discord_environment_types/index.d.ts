@@ -37,6 +37,16 @@ declare class BdApi {
         load  : OptionalCaller<(key: string) => string | number | undefined>;
         delete: OptionalCaller<(key: string) => void>;
     };
+
+    UI: {
+        alert: (title: string, content: string | React.ReactElement | (string | React.ReactElement)[]) => void;
+        showToast: (content: string, options: {
+            type?: ""|"info"|"success"|"danger"|"error"|"warning"|"warn",
+            icon?: boolean,
+            timeout?: number,
+            forceShow?: boolean,
+        }) => void;
+    }
 }
 
 type PatcherCallback = (thisObject: any, args: any[], ret: any) => any;
