@@ -12,6 +12,7 @@ const {
     },
     DOM,
     Data,
+    UI,
 } = new BdApi(PLUGIN_NAME);
 
 export {
@@ -25,4 +26,5 @@ export {
             byProps,
     DOM,
     Data,
+    UI,
 }
