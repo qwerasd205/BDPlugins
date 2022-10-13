@@ -74,6 +74,9 @@ const transformComments = (source, mark = true) => {
             i += target.length;
         }
     }
+    const isECMAScriptIdentifierChar = (c) => {
+        return /[\p{ID_Continue}]/u.test(c);
+    }
     for (; i < source.length; i++) {
         switch (comment) {
             case 0: // NOT IN COMMENT
@@ -105,7 +108,7 @@ const transformComments = (source, mark = true) => {
                             }
                             continue;
                     }
-                    if (mark) {
+                    if (mark && !isECMAScriptIdentifierChar(source.charAt(i - 1))) {
                         insertBefore('let', '/*!@let*/');
                         insertBefore('const', '/*!@const*/');
                         insertBefore('export let', '/*!@let*/');
@@ -243,6 +246,48 @@ const specialProcessing = {
                 }
             }
 
+            const formatSequence = (state, nodes) => {
+                /*
+                Writes into `state` a sequence of `nodes`.
+                */
+                state.write('(');
+                const multi_line = nodes.length > 5;
+                let p;
+                if (nodes.length > 0) {
+                    const  elements  = nodes,
+                            { length } = elements;
+                    if (multi_line) {
+                        state.write(state.lineEnd);
+                        state.write(state.indent.repeat(++state.indentLevel));
+                        p = state.output.length;
+                    }
+                    for (let i = 0; ;) {
+                        const element = elements[i];
+                        if (element != null) {
+                            state.generator[element.type](element, state);
+                        }
+                        if (++i < length) {
+                            state.write(', ');
+                            if (state.output.length - p >= 24) {
+                                state.write(state.lineEnd);
+                                state.write(state.indent.repeat(state.indentLevel));
+                                p = state.output.length;
+                            }
+                        } else {
+                            if (element == null) {
+                                state.write(', ');
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (multi_line) {
+                    state.write(state.lineEnd);
+                    state.write(state.indent.repeat(--state.indentLevel));
+                }
+                state.write(')');
+            };
+
             const generator = Object.assign({}, astring.GENERATOR, {
                 Literal (node, state) { // prefer single quotes
                     if (typeof node.value !== 'string') return astring.GENERATOR.Literal.bind(this)(node, state);
@@ -280,7 +325,21 @@ const specialProcessing = {
                             state._THENCATCHCALL = true;
                         }
                     }
-                    astring.GENERATOR.CallExpression.bind(this)(node, state);
+                    const precedence = state.expressionsPrecedence[node.callee.type]
+                    if (
+                        precedence === 17 ||
+                        precedence < state.expressionsPrecedence.CallExpression
+                    ) {
+                        state.write('(');
+                        this[node.callee.type](node.callee, state);
+                        state.write(')');
+                    } else {
+                        this[node.callee.type](node.callee, state);
+                    }
+                    if (node.optional) {
+                        state.write('?.');
+                    }
+                    formatSequence(state, node['arguments']);
                 },
                 MemberExpression (node, state) { // put .then and .catch stuff on new lines.
                     if (state._THENCATCHCALL) {
@@ -346,7 +405,7 @@ const specialProcessing = {
                             }
                             if (++i < length) {
                                 state.write(', ');
-                                if (state.output.length - p >= 25) {
+                                if (state.output.length - p >= 36) {
                                     state.write(state.lineEnd);
                                     state.write(state.indent.repeat(state.indentLevel));
                                     p = state.output.length;
@@ -429,6 +488,11 @@ async function compile (entryPoints, options) {
         define: {
             PLUGIN_NAME: `'${target}'`
         },
+        external: [
+            'electron',
+            'fs',
+            'http', 'https', 'request'
+        ],
 
         plugins: [
             specialProcessing,
