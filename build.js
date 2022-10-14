@@ -43,7 +43,7 @@ const src_file = path.resolve(
     src_file_name
 );
 
-const transformComments = (source, mark = true) => {
+const transformComments = (source, mark = true, drop_top_level = false) => {
     let quoted = false;
     let comment = 0; // ENUM { 0 = NONE, 1 = LINE, 2 = MULTILINE }
     
@@ -53,6 +53,10 @@ const transformComments = (source, mark = true) => {
         i += s.length;
     }
     const onCommentStart = () => {
+        if (drop_top_level && source.charAt(i - 2) === '\n') {
+            return;
+        }
+        
         if (mark) {
             i++;
             insert('!');
@@ -154,9 +158,7 @@ const specialProcessing = {
         build.onLoad({ filter: /\.[jt]sx?$/ }, async (args) => {
             let text = await fs.promises.readFile(args.path, 'utf-8');
 
-            if (!args.path.endsWith('utils/functional.ts')) {
-                text = transformComments(text); // add ! to keep comments
-            }
+            text = transformComments(text, true, args.path.endsWith('utils/functional.ts')); // add ! to keep comments
 
             return {
                 contents: text,
