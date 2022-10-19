@@ -2,12 +2,13 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.0
+ * @version 2.0.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
 // utils/BdApi.ts
 const { React, ReactDOM, Patcher, Webpack, Webpack: { getModule, waitForModule, Filters, Filters: { byProps } }, DOM, Data, UI } = new BdApi('PinchToZoom');
+// utils/functional.ts
 // utils/utils.ts
 const SingletonListener = target => {
     const listeners = new Map();
@@ -28,13 +29,19 @@ const SingletonListener = target => {
         }
     };
 };
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+// utils/modules/filters.ts
+const hasSubstrings = (str, ...subs) => typeof str === 'string' && subs.every(sub => str.includes(sub));
+const SectionTitleFilter = m => m.Tags && hasSubstrings(m.toString?.(), '"faded","disabled","required"');
+const FormTextFilter = m => m?.Sizes?.SIZE_32 && m.Colors;
+const SliderFilter = m => m?.prototype?.renderMark;
 // PinchToZoom/src/PinchToZoom.plugin.tsx
 const ImageModal = getModule(m => m?.prototype?.render && m.toString?.()?.includes?.('renderMobileCloseButton'));
 const { imageWrapper } = getModule(byProps('imageWrapper'));
 const { downloadLink } = getModule(byProps('downloadLink'));
-const FormTitle = getModule(byProps('Tags', 'Sizes'));
-const FormText = getModule(m => m?.Sizes?.SIZE_32 && m.Colors);
-const Slider = getModule(m => m?.prototype?.renderMark);
+const FormTitle = getModule(SectionTitleFilter);
+const FormText = getModule(FormTextFilter);
+const Slider = getModule(SliderFilter);
 const RadioGroup = getModule(m => m?.Sizes && m.toString?.()?.includes?.('radioItemClassName'));
 const Radio = class extends BdApi.React.Component {
     constructor(props) {
@@ -63,19 +70,30 @@ const throttle = f => {
     requestAnimationFrame(f);
 };
 const document_listener = SingletonListener(document);
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true }) => {
-    const { width, height } = inner.getBoundingClientRect();
+// FIXED (2.0.1):
+// - Restored mouse/trackpad detection for mouse scroll-wheel zooming without ctrl
+// - Update panning bounds when target element base size changes (window resize / image modal zoom animation)
+// - Better handling for whole app zooming (don't interfere with actual inputs for scrolling, etc.)
+const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true, eat_scroll = true, pan_margin = 16 }) => {
+    let { width, height } = inner.getBoundingClientRect();
     let zoom = 1,
         x = 0,
         y = 0;
     const outer_listener = SingletonListener(outer);
     const inner_listener = SingletonListener(inner);
+    const resize_observer = new ResizeObserver(e => {
+        const rect = e[0].contentRect;
+        width = rect.width;
+        height = rect.height;
+    });
+    resize_observer.observe(inner, { box: 'device-pixel-content-box' });
     const cleanup = () => {
         document_listener.clearAllListeners();
         outer_listener.clearAllListeners();
         inner_listener.clearAllListeners();
-        inner.style.transform = void 0;
+        resize_observer.disconnect();
+        inner.style.transform = 'none';
+        inner.style.removeProperty('transform');
     };
     const adjustTransform = () => {
         if (zoom === 1) {
@@ -84,8 +102,8 @@ const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true }) =
         } else {
             const zw = width * zoom;
             const zh = height * zoom;
-            const maxX = Math.max(0, 0.5 * (zw - width + 16));
-            const maxY = Math.max(0, 0.5 * (zh - height + 16));
+            const maxX = Math.max(0, 0.5 * (zw - width) + pan_margin);
+            const maxY = Math.max(0, 0.5 * (zh - height) + pan_margin);
             if (x > maxX) x = maxX;
             else if (x < -maxX) x = -maxX;
             if (y > maxY) y = maxY;
@@ -93,18 +111,31 @@ const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true }) =
         }
         throttle(() => inner.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`);
     };
+    let last_scroll_event = 0;
+    outer_listener.setListener('scroll', e => {
+        last_scroll_event = e.timeStamp;
+    }, true);
     let last_trackpad_use = 0;
     outer_listener.setListener('wheel', e => {
-        // a mouse always gives deltaY increments of 40, and will never give deltaX
+        // @ts-ignore wheelDeltaY is deprecated, so TypeScript doesn't type it - but it's the only thing that can distinguish mouse from trackpad reliably.
+        const { wheelDeltaY } = e;
+        // a mouse always gives wheelDeltaY increments of 40, and will never give deltaX
         // also the user isn't gonna switch between a trackpad and mouse within 250ms
-        const is_mouse = Math.abs(e.deltaY) % 40 === 0 && !e.deltaX && e.timeStamp - last_trackpad_use > 250;
+        const is_mouse = Math.abs(wheelDeltaY) % 40 === 0 && !e.deltaX && e.timeStamp - last_trackpad_use > 250;
         // trackpads *will* give exact 40 increments in case of zoom gestures, but
         // in that case we don't care anyway, since we wanna do the same behaviour
-        if (Math.abs(e.deltaY) % 40 !== 0) last_trackpad_use = e.timeStamp;
-        if (e.ctrlKey || is_mouse) {
+        if (Math.abs(wheelDeltaY) % 40 !== 0) last_trackpad_use = e.timeStamp;
+        // If we don't we aren't explicitly zooming and don't want to eat scroll inputs
+        // and this wheel event is coming from a scroll wheel, return early;
+        // this event is not for us.
+        if (!e.ctrlKey && !eat_scroll && is_mouse) return;
+        // If we don't want to eat scroll inputs and a scroll event just happened
+        // less than 250ms ago, return early; this event is not for us.
+        if (!eat_scroll && e.timeStamp - last_scroll_event < 250) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.ctrlKey || eat_scroll && is_mouse) {
             // zoom
-            e.preventDefault();
-            e.stopPropagation();
             const delta = e.deltaY + e.deltaX;
             const d = clamp(1 - delta / rate, 1 / zoom, zoom_limit / zoom);
             zoom *= d;
@@ -114,8 +145,8 @@ const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true }) =
             // calculate location of mouse relative to center
             // in order to zoom in/out from the mouse location
             const { left, top, width: width2, height: height2 } = outer.getBoundingClientRect();
-            const mx = e.clientX - left - width2 / 2;
-            const my = e.clientY - top - height2 / 2;
+            const mx = e.clientX - left - width2 * 0.5;
+            const my = e.clientY - top - height2 * 0.5;
             x += mx * (1 - d);
             y += my * (1 - d);
         } else {
@@ -161,12 +192,7 @@ const initializeZooming = ({ rate, zoom_limit, outer, inner, alt_pan = true }) =
 };
 module.exports = class PinchToZoom {
     constructor() {
-        this.default_settings = {
-            mode: 0,
-            /*IMAGES*/
-            zoom_limit: 10,
-            rate: 7
-        };
+        this.default_settings = { mode: 0, /*IMAGES*/ zoom_limit: 10, rate: 7 };
         this.cleanup_actions = [];
     }
     start() {
@@ -212,7 +238,9 @@ module.exports = class PinchToZoom {
             rate,
             outer: document.body,
             inner: document.getElementById('app-mount'),
-            alt_pan: false
+            alt_pan: false,
+            eat_scroll: false,
+            pan_margin: 0
         }));
     }
     patchImageModal() {
@@ -278,7 +306,6 @@ module.exports = class PinchToZoom {
         return BdApi.React.createElement(
             'div', { id: 'ptz_settings' },
             BdApi.React.createElement(FormTitle, null, 'Zoom Type'),
-            BdApi.React.createElement('br', null),
             BdApi.React.createElement(Radio, {
                 options: [{ value: 0, /*IMAGES*/ name: 'Images' }, { value: 2, /*WHOLE_APP_EMULATED*/ name: 'Whole App ᴱᴹᵁᴸᴬᵀᴱᴰ' }, { value: 1, /*WHOLE_APP_NATIVE*/ name: 'Whole App (CURRENTLY NON-FUNCTIONAL, USE EMULATED INSTEAD)' }],
                 onChange: modeChange,

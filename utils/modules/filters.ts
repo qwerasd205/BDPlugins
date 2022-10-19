@@ -18,3 +18,7 @@ export const GameIconFilter: FilterFn          = m => m.Sizes?.XSMALL && hasSubs
 
 export const EXPORTS_RichPresenceFilter: FilterFn         = m => m.prototype?.renderImage && m.prototype.renderGameImage;
 export const EXPORTS_PrivateChannelRouterFilter: FilterFn = m => hasSubstrings(m.render?.toString?.(), '"replace","to","innerRef"');
+
+export const SectionTitleFilter: FilterFn      = m => m.Tags && hasSubstrings(m.toString?.(), '"faded","disabled","required"');
+export const FormTextFilter: FilterFn          = m => m?.Sizes?.SIZE_32 && m.Colors;
+export const SliderFilter: FilterFn            = m => m?.prototype?.renderMark;

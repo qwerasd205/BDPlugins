@@ -71,3 +71,5 @@ export const getKey = (module: any, f: FilterFn): string | undefined => {
         if (f(module[key])) return key;
     }
 }
+
+export const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
