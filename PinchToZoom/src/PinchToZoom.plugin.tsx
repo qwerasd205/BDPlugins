@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.1
+ * @version 2.0.2
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -15,7 +15,7 @@ const enum Mode {
 
 import { Patcher, getModule, byProps, DOM, Data, UI } from 'utils/BdApi';
 
-import { SingletonListener, clamp } from 'utils/utils';
+import { SingletonListener, Debouncer, clamp } from 'utils/utils';
 
 import { SectionTitleFilter, FormTextFilter, SliderFilter } from 'utils/modules/filters';
 
@@ -65,11 +65,9 @@ const Radio = class extends BdApi.React.Component<
     }
 }
 
-let requested = null;
-const throttle = f => {
-    cancelAnimationFrame(requested);
-    requestAnimationFrame(f);
-}
+// FIXED (2.0.2):
+// - Replaced `throttle` with utils.ts Debouncer(0), `throttle` was broken anyway lmao.
+const throttle = Debouncer(0);
 
 const document_listener = SingletonListener(document);
 
