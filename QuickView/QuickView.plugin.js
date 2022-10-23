@@ -2,20 +2,17 @@
  * @name QuickView
  * @author Qwerasd
  * @description View avatars, icons, banners, thumbnails, and emojis with alt + click.
- * @version 1.1.0
+ * @version 1.1.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
 // utils/BdApi.ts
-const { React, ReactDOM, Patcher, Webpack, Webpack: { getModule, waitForModule, Filters, Filters: { byProps } }, DOM, Data } = new BdApi('QuickView');
+const { React, ReactDOM, Patcher, Webpack, Webpack: { getModule, waitForModule, Filters, Filters: { byProps } }, DOM, Data, UI } = new BdApi('QuickView');
 // utils/functional.ts
-var curry = (f, param_count = f.length) => {
-    const go = (...xs) => xs.length >= param_count ? f(...xs) : x => go(...xs, x);
-    return go();
-};
-var flip = f => b => a => f(a)(b);
 // utils/utils.ts
-const walkTree = (elem, filter, keys = ['child', 'alternate', 'sibling', 'return'], seen = new WeakSet()) => {
+const walkTree = (elem, filter, keys = [
+    'child', 'alternate', 'sibling', 'return'
+], seen = new WeakSet()) => {
     if (elem == null) return false;
     if (seen.has(elem)) return false;
     if (filter(elem)) return elem;
@@ -28,13 +25,11 @@ const walkTree = (elem, filter, keys = ['child', 'alternate', 'sibling', 'return
     }
     return false;
 };
-const Debouncer = delay => {
+const AnimationFrameDebouncer = () => {
     let t;
-    const issue = delay ? flip(curry(setTimeout))(delay) : requestAnimationFrame;
-    const cancel = delay ? () => clearTimeout(t) : () => cancelAnimationFrame(t);
     return (f, ...args) => {
-        cancel();
-        t = issue(() => f(...args));
+        cancelAnimationFrame(t);
+        requestAnimationFrame(() => f(...args));
     };
 };
 const getKey = (module2, f) => {
@@ -71,8 +66,8 @@ const AvatarFilter = m => hasSubstrings(m.toString?.(), 'typingIndicatorRef', 's
 const EXPORTS_RichPresenceFilter = m => m.prototype?.renderImage && m.prototype.renderGameImage;
 // utils/css.ts
 const makeSelector = class_name => '.' + class_name?.split(' ').join('.');
-const asyncCSS = (id, signal, template, classname_modules) => {
-    const debounce = Debouncer(0);
+const asyncCSS = (signal, template, classname_modules) => {
+    const debounce = AnimationFrameDebouncer();
     const discovered = {};
     const updateCSS = () => DOM.addStyle(template(discovered));
     for (const [keys, filter] of classname_modules) {
@@ -193,7 +188,7 @@ const sizeImage = (src, new_size) => {
 module.exports = class QuickView {
     start() {
         this.abort_controller = new AbortController();
-        asyncCSS('QuickView', this.abort_controller.signal, css, [
+        asyncCSS(this.abort_controller.signal, css, [
             [['avatarHoverTarget'], byProps('avatarHoverTarget')],
             [['hasBanner'], byProps('animatedContainer', 'hasBanner')],
             [['embedAuthorIcon'], byProps('embedAuthorIcon')],
@@ -246,14 +241,14 @@ module.exports = class QuickView {
         // [X] Friends List Avatar
         // [X] Role Icons
         // [X] Video Thumbnails
-        // [X] Mutual Server Icon   (NEW)
-        // [X] Mutual Friend Avatar (NEW)
-        // [X] Group VC Avatar        (NEW)
-        // [X] Channel List VC Avatar (NEW)
-        // [X] Popout Non-Server Avatar (NEW)
-        // [X] Modal Server Avatar      (NEW)
-        // [X] Modal Rich Presence Image  (NEW)
-        // [X] Popout Rich Presence Image (NEW)
+        // [X] Mutual Server Icon
+        // [X] Mutual Friend Avatar
+        // [X] Group VC Avatar
+        // [X] Channel List VC Avatar
+        // [X] Popout Non-Server Avatar
+        // [X] Modal Server Avatar
+        // [X] Modal Rich Presence Image
+        // [X] Popout Rich Presence Image
         waitForModule(ChannelListHeaderFilter, { signal })
             .then(ChannelListHeader => {
                 if (!ChannelListHeader) return;

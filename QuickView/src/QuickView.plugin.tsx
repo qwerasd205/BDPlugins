@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View avatars, icons, banners, thumbnails, and emojis with alt + click.
- * @version 1.1.0
+ * @version 1.1.1
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
@@ -80,7 +80,7 @@ export = class QuickView {
     start() {
         this.abort_controller = new AbortController();
 
-        asyncCSS('QuickView', this.abort_controller.signal, css, [
+        asyncCSS(this.abort_controller.signal, css, [
             [['avatarHoverTarget'        ], byProps('avatarHoverTarget')],
             [['hasBanner'                ], byProps('animatedContainer', 'hasBanner')],
             [['embedAuthorIcon'          ], byProps('embedAuthorIcon')],
@@ -136,14 +136,14 @@ export = class QuickView {
         // [X] Friends List Avatar
         // [X] Role Icons
         // [X] Video Thumbnails
-        // [X] (NEW) Mutual Server Icon
-        // [X] (NEW) Mutual Friend Avatar
-        // [X] (NEW) Group VC Avatar
-        // [X] (NEW) Channel List VC Avatar
-        // [X] (NEW) Popout Non-Server Avatar
-        // [X] (NEW) Modal Server Avatar
-        // [X] (NEW) Modal Rich Presence Image
-        // [X] (NEW) Popout Rich Presence Image
+        // [X] Mutual Server Icon
+        // [X] Mutual Friend Avatar
+        // [X] Group VC Avatar
+        // [X] Channel List VC Avatar
+        // [X] Popout Non-Server Avatar
+        // [X] Modal Server Avatar
+        // [X] Modal Rich Presence Image
+        // [X] Popout Rich Presence Image
 
         waitForModule(ChannelListHeaderFilter, {signal})
             .then(ChannelListHeader => {
