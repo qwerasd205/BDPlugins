@@ -1,17 +1,16 @@
 
-import { Debouncer } from "utils/utils";
+import { AnimationFrameDebouncer } from "utils/utils";
 
 import { waitForModule, DOM } from "utils/BdApi";
 
 export const makeSelector = (class_name: string) => '.' + class_name?.split(' ').join('.');
 
 export const asyncCSS = (
-        id: string,
         signal: AbortSignal,
         template: (selectors: Record<string, string>) => string,
         classname_modules: [string[]|Record<string,string>, (m: any) => boolean][]
     ) => {
-        const debounce = Debouncer(0);
+        const debounce = AnimationFrameDebouncer();
 
         const discovered: Record<string, string> = {};
 
