@@ -2,26 +2,19 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.2
+ * @version 2.0.3
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
 // utils/BdApi.ts
 const { React, ReactDOM, Patcher, Webpack, Webpack: { getModule, waitForModule, Filters, Filters: { byProps } }, DOM, Data, UI } = new BdApi('PinchToZoom');
 // utils/functional.ts
-const curry = (f, param_count = f.length) => {
-    const go = (...xs) => xs.length >= param_count ? f(...xs) : x => go(...xs, x);
-    return go();
-};
-const flip = f => b => a => f(a)(b);
 // utils/utils.ts
-const Debouncer = delay => {
+const AnimationFrameDebouncer = () => {
     let t;
-    const issue = delay ? flip(curry(setTimeout))(delay) : requestAnimationFrame;
-    const cancel = delay ? () => clearTimeout(t) : () => cancelAnimationFrame(t);
     return (f, ...args) => {
-        cancel();
-        t = issue(() => f(...args));
+        cancelAnimationFrame(t);
+        requestAnimationFrame(() => f(...args));
     };
 };
 const SingletonListener = target => {
@@ -79,9 +72,7 @@ const Radio = class extends BdApi.React.Component {
         });
     }
 };
-// FIXED (2.0.2):
-// - Replaced `throttle` with utils.ts Debouncer(0), `throttle` was broken anyway lmao.
-const throttle = Debouncer(0);
+const throttle = AnimationFrameDebouncer();
 const document_listener = SingletonListener(document);
 // FIXED (2.0.1):
 // - Restored mouse/trackpad detection for mouse scroll-wheel zooming without ctrl
