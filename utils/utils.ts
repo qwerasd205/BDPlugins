@@ -50,6 +50,7 @@ export const SingletonListener = <T extends EventTarget>(target: T) => {
     const listeners = new Map<EventTypesForTarget, EventListenerOrEventListenerObject>();
     return {
         setListener: ((event, callback, options?) => {
+            target.removeEventListener(event, listeners.get(event));
             listeners.set(event, callback);
             target.addEventListener(event, callback, options);
         }) as T['addEventListener'],

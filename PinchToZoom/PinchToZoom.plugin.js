@@ -14,6 +14,7 @@ const SingletonListener = target => {
     const listeners = new Map();
     return {
         setListener: (event, callback, options) => {
+            target.removeEventListener(event, listeners.get(event));
             listeners.set(event, callback);
             target.addEventListener(event, callback, options);
         },
