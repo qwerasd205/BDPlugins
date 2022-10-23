@@ -29,7 +29,7 @@ const AnimationFrameDebouncer = () => {
     let t;
     return (f, ...args) => {
         cancelAnimationFrame(t);
-        requestAnimationFrame(() => f(...args));
+        t = requestAnimationFrame(() => f(...args));
     };
 };
 const getKey = (module2, f) => {

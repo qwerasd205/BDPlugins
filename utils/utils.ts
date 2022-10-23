@@ -50,7 +50,7 @@ export const AnimationFrameDebouncer = () => {
 
     return (f: Fn, ...args: any[]) => {
         cancelAnimationFrame(t);
-        requestAnimationFrame(() => f(...args));
+        t = requestAnimationFrame(() => f(...args));
     }
 }
 
