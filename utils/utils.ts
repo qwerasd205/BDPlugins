@@ -32,7 +32,7 @@ export const Debouncer = (delay: number) => {
     let t: number | NodeJS.Timeout;
 
     const issue = delay
-        ? flip(curry(setTimeout))(delay)
+        ? flip(curry(setTimeout, 2))(delay)
         : requestAnimationFrame;
 
     const cancel = delay
@@ -42,6 +42,15 @@ export const Debouncer = (delay: number) => {
     return (f: Fn, ...args: any[]) => {
         cancel();
         t = issue(() => f(...args));
+    }
+}
+
+export const AnimationFrameDebouncer = () => {
+    let t: number;
+
+    return (f: Fn, ...args: any[]) => {
+        cancelAnimationFrame(t);
+        requestAnimationFrame(() => f(...args));
     }
 }
 
