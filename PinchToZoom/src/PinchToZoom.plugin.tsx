@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.3
+ * @version 2.0.4
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -73,6 +73,9 @@ const document_listener = SingletonListener(document);
 // - Restored mouse/trackpad detection for mouse scroll-wheel zooming without ctrl
 // - Update panning bounds when target element base size changes (window resize / image modal zoom animation)
 // - Better handling for whole app zooming (don't interfere with actual inputs for scrolling, etc.)
+
+// FIXED (2.0.4):
+// - Only stop propagation when eating scroll inputs - not doing this previously this broke trackpad scrolling for whole app mode.
 
 const initializeZooming = ({
     rate,
@@ -158,8 +161,11 @@ const initializeZooming = ({
         // less than 250ms ago, return early; this event is not for us.
         if (!eat_scroll && e.timeStamp - last_scroll_event < 250) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+        // If we we're zoomed in and want to eat scroll inputs, stop propagation.
+        if (zoom !== 1.0 && eat_scroll) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         
         if (e.ctrlKey || (eat_scroll && is_mouse)) {
             // zoom
