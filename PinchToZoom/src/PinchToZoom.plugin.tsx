@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.4
+ * @version 2.0.5
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */

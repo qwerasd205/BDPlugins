@@ -2,7 +2,7 @@
  * @name PinchToZoom
  * @author Qwerasd
  * @description Use pinch to zoom gestures in Discord.
- * @version 2.0.4
+ * @version 2.0.5
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=554
  */
@@ -19,23 +19,26 @@ const AnimationFrameDebouncer = () => {
 };
 const SingletonListener = target => {
     const listeners = new Map();
-    return {
-        setListener: (event, callback, options) => {
-            target.removeEventListener(event, listeners.get(event));
-            listeners.set(event, callback);
-            target.addEventListener(event, callback, options);
-        },
-        clearListener: event => {
-            target.removeEventListener(event, listeners.get(event));
+    const clearListener = event => {
+        const callback = listeners.get(event);
+        if (callback) {
+            // attempt to remove both the non-capture and capture version of the listener
+            target.removeEventListener(event, callback);
+            target.removeEventListener(event, callback, true);
             listeners.delete(event);
-        },
-        clearAllListeners: () => {
-            for (const [event, callback] of listeners) {
-                target.removeEventListener(event, callback);
-            }
-            listeners.clear();
         }
     };
+    const clearAllListeners = () => {
+        for (const event of listeners.keys()) {
+            clearListener(event);
+        }
+    };
+    const setListener = (event, callback, options) => {
+        clearListener(event);
+        listeners.set(event, callback);
+        target.addEventListener(event, callback, options);
+    };
+    return { setListener, clearListener, clearAllListeners };
 };
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 // utils/modules/filters.ts

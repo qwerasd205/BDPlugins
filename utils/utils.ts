@@ -57,22 +57,29 @@ export const AnimationFrameDebouncer = () => {
 export const SingletonListener = <T extends EventTarget>(target: T) => {
     type EventTypesForTarget = Parameters< T['addEventListener']>[0];
     const listeners = new Map<EventTypesForTarget, EventListenerOrEventListenerObject>();
-    return {
-        setListener: ((event, callback, options?) => {
-            target.removeEventListener(event, listeners.get(event));
-            listeners.set(event, callback);
-            target.addEventListener(event, callback, options);
-        }) as T['addEventListener'],
-        clearListener: (event: EventTypesForTarget) => {
-            target.removeEventListener(event, listeners.get(event));
+    const clearListener = (event: EventTypesForTarget) => {
+        const callback = listeners.get(event);
+        if (callback) {
+            // attempt to remove both the non-capture and capture version of the listener
+            target.removeEventListener(event, callback);
+            target.removeEventListener(event, callback, true);
             listeners.delete(event);
-        },
-        clearAllListeners: () => {
-            for (const [event, callback] of listeners) {
-                target.removeEventListener(event, callback);
-            }
-            listeners.clear();
         }
+    };
+    const clearAllListeners = () => {
+        for (const event of listeners.keys()) {
+            clearListener(event);
+        }
+    };
+    const setListener = ((event, callback, options?) => {
+        clearListener(event);
+        listeners.set(event, callback);
+        target.addEventListener(event, callback, options);
+    }) as T['addEventListener'];
+    return {
+        setListener,
+        clearListener,
+        clearAllListeners,
     }
 }
 
