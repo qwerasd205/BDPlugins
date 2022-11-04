@@ -1,7 +1,7 @@
 
 import { byProps } from "utils/BdApi";
 
-const hasSubstrings = (str: any, ...subs: string[]) => typeof str === 'string' && subs.every(sub => str.includes(sub));
+export const hasSubstrings = (str: any, ...subs: string[]) => typeof str === 'string' && subs.every(sub => str.includes(sub));
 
 export const PopoutHandlerFilter: FilterFn     = m => m?.Align && m.Positions && m.contextType && m.defaultProps?.autoInvert != null;
 export const ListAvatarFilter: FilterFn        = m => m.Sizes?.MINI && m.defaultProps?.size && m.defaultProps.tooltipPosition;
