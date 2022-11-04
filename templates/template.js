@@ -6,19 +6,32 @@
  * @authorId 140188899585687552
  */
 
-const PLUGIN_NAME = '$NAME$';
-
-const { Patcher, Webpack, Webpack: { Filters } } = BdApi;
-
+import { Patcher, DOM } from 'utils/BdApi';
+ 
 module.exports = class $NAME$ {
+    /**
+     * Cleanup actions will be performed in the reverse order they're added.
+     * 
+     * ```js
+     * cleanup.push(a, b); // ... on stop: b(); a();
+     * ```
+     */
+    cleanup = [];
+
     start() {
-        BdApi.injectCSS(PLUGIN_NAME, /*CSS*/`
-
-        `);
+        this.cleanup.push(
+            () => DOM.removeStyle(),
+            () => Patcher.unpatchAll(),
+        );
     }
-
+ 
     stop() {
-        BdApi.clearCSS(PLUGIN_NAME);
-        Patcher.unpatchAll(PLUGIN_NAME);
+        while (this.cleanup.length) {
+            try {
+                this.cleanup.pop()();
+            } catch (e) {
+                console.error(`Error during cleanup of $NAME$:`, e);
+            }
+        }
     }
-}
+ }
