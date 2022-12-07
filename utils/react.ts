@@ -1,7 +1,7 @@
 
 import type { Fiber } from 'react-reconciler';
 
-import { walkTree } from 'utils/utils';
+import { walkTree, findKey } from 'utils/utils';
 
 import { React, ReactDOM } from 'utils/BdApi';
 
@@ -15,7 +15,7 @@ export const getRenderedChildType = (c: Component, f: (c: any) => boolean, props
     ReactDOM.render(React.createElement(c, props), root);
 
     // Grab the internal fiber from the root;
-    const fiber = root.__reactContainer$;
+    const fiber = root[findKey(root, k => k.startsWith('__reactContainer$'))];
 
     // Walk the tree from the fiber until we find a type matching our filter `f`
     const result = walkTree(fiber, e => e.type && (typeof e.type !== 'string') && f(e.type));

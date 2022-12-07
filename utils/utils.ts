@@ -89,4 +89,10 @@ export const getKey = (module: any, f: FilterFn): string | undefined => {
     }
 }
 
+export const findKey = (object: any, f: FilterFn): string | undefined => {
+    for (const key in object) {
+        if (f(key)) return key;
+    }
+}
+
 export const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);

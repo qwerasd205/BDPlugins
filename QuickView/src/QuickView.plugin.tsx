@@ -2,7 +2,7 @@
  * @name QuickView
  * @author Qwerasd
  * @description View avatars, icons, banners, thumbnails, and emojis with alt + click.
- * @version 1.1.1
+ * @version 1.1.2
  * @authorId 140188899585687552
  * @updateUrl https://betterdiscord.app/gh-redirect?id=644
  */
